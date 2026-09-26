@@ -1,0 +1,94 @@
+# segments
+
+Reads the dataset `SegmentExport` writes, without ever looking ahead.
+
+This is step 1 of [BRIEF.md](BRIEF.md): the data side of the structure trainer.
+The tagger, the outcome labeler and the game are not here yet.
+
+## Getting it running
+
+```bash
+cd "Segment strategy"
+python -m venv .venv
+.venv/Scripts/python -m pip install -e ".[dev]"   # or: pip install pandas matplotlib pytest
+.venv/Scripts/python -m pytest -q                  # 11 tests, under a second
+```
+
+Then export a dataset: drop **SegmentExport** on an MNQ chart in NinjaTrader,
+let it run through the history, and it writes two CSVs into
+`Documents\NinjaTrader 8\segment-export\`.
+
+```bash
+python -m segments list   "~/Documents/NinjaTrader 8/segment-export"
+python -m segments report "~/Documents/NinjaTrader 8/segment-export/MNQ_12-26-15Minute-BottomUp-Median-t1-m3-w250"
+python -m segments plot   <stem> --bar 4000 --history 150 --reveal 30 --bars
+python -m segments sheet  <stem> --count 8
+```
+
+Every command takes either CSV of an export, their shared stem, or a folder
+holding exactly one export.
+
+## The one rule
+
+Anything that could ever feed a label, a question or a feature comes from
+`replay.at(data, n)` or `replay.walk(data)` — the causal reconstruction, which
+knows only what bar *n* knew.
+
+```python
+from segments import load, replay
+
+data = load(".../MNQ_12-26-15Minute-BottomUp-Median-t1-m3-w250")
+print(data.meta, data.check())
+
+view = replay.at(data, 4000)
+for piece in view.segments():
+    print(piece.start_bar, piece.end_bar, piece.slope(), piece.provisional)
+```
+
+Three functions deliberately break that rule, and say so in their docstrings:
+`confirmation`, `lag_summary` and `legs` read the whole file. They exist to
+*measure* the dataset — above all the confirmation lag — and their output
+belongs in a report, never in a feature.
+
+## What the modules do
+
+| module | |
+|---|---|
+| `dataset.py` | loads both CSVs and the JSON header; `check()` refuses files that cannot mean what they claim |
+| `replay.py` | the causal reconstruction, plus the lag and leg measurements |
+| `plot.py` | a static picture of one bar's view, and a contact sheet of several |
+| `__main__.py` | `report`, `plot`, `sheet`, `list` |
+
+## Reading the report
+
+The number that matters is the **confirmation lag**: bars between a turn
+happening and it being trustworthy. Half the turns settle by the median; every
+rule downstream inherits that delay, and no amount of cleverness gets it back.
+If it is large next to the legs you want to trade, the timeframe is wrong, not
+the rules.
+
+`check()` is worth running on every new export. The three failures that actually
+happen: two files from different runs left in the same folder (caught by
+comparing each pivot price against its own bar's source price), an export
+interrupted so the bars stop before the events do, and a hand-edited CSV.
+
+## Checking it against NinjaTrader
+
+`plot` draws segments, not candles — that is the trainer's view. Put the same
+instrument, period and settings on a chart with **PriceSegments**, look at the
+same bar, and the two pictures agree or something in the pipeline is wrong. It
+is the cheapest test in the project and the only one that catches a
+misunderstanding of the data rather than a bug in the code.
+
+Two things will differ legitimately, and knowing which is which saves an hour:
+
+- PriceSegments draws the segmentation **as at the last bar of the chart**;
+  `plot --bar N` draws it as at N. Scroll the chart so N is the last bar.
+- `PriceSegments` defaults to `Source = Close`, `SegmentExport` to `Median`. Set
+  the chart to match the header line.
+
+## Next
+
+A Python port of `SegmentFit` (`fit.py`), so tolerance and method can be
+re-tuned here instead of by re-exporting. Then the tagger, which is the first
+thing that has an opinion rather than a measurement.

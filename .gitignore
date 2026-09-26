@@ -1,0 +1,18 @@
+# --- Python ---
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+# --- The data itself ---
+# Exports are large, reproducible from NinjaTrader, and instrument-specific.
+# What goes in the repo is the code that reads them.
+data/
+*-bars.csv
+*-pivots.csv
+
+# --- Output ---
+segments-*.png
