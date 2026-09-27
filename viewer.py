@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 
 from segments import dataset as dataset_module
-from segments import fit, plot, replay
+from segments import fit, plot, replay, tagger
 
 DEFAULT_FOLDER = Path.home() / "OneDrive" / "Documentos" / "NinjaTrader 8" / "segment-export"
 
@@ -114,6 +114,19 @@ segments_on = st.sidebar.checkbox("Show the segments", True,
                                   help="Off is the chart without training wheels")
 sticks_on = st.sidebar.checkbox("Show the bars", False,
                                 help="High-low sticks behind the segments")
+classify = st.sidebar.checkbox("Classify", True,
+                               help="The tagger's reading: the swing names and the protective level")
+
+with st.sidebar.expander("The rules"):
+    st.caption("Defaults are a starting point. Argue with them against a long export, not against a few days.")
+    rules = tagger.Rules(
+        equal_atr=st.slider("Same level within (ATR)", 0.0, 0.5, 0.15, 0.01,
+                            help="Two swings this close are a double top, not a higher high"),
+        break_atr=st.slider("Break clears by (ATR)", 0.0, 0.5, 0.10, 0.01,
+                            help="How far past the level a close must settle to be a break"),
+        weaken_ratio=st.slider("Push shrunk to", 0.3, 1.0, 0.75, 0.05),
+        pullback_ratio=st.slider("Pullback gave back", 0.3, 1.0, 0.75, 0.05),
+    )
 
 # --- where to stand ----------------------------------------------------------
 
@@ -137,11 +150,14 @@ bar = st.slider("Bar", first, last, key="bar")
 view = replay.at(data, bar)
 pivots = view.pivots()
 pieces = view.segments()
+reading = tagger.label(data, bar, rules, view=view) if classify else None
 
 figure, axis = plt.subplots(figsize=(15, 5.2))
 
 if segments_on:
     plot.draw(data, bar, history=history, reveal=reveal, sticks=sticks_on, ax=axis)
+    if reading is not None:
+        plot.annotate(axis, reading, right=bar)
 else:
     # The same window with the lines taken away: price alone, which is the level
     # the training is actually aiming at.
@@ -159,6 +175,15 @@ else:
 
 st.pyplot(figure, width="stretch")
 plt.close(figure)
+
+if reading is not None:
+    # The colour is the state, so the reading can be taken in before it is read.
+    shout = {
+        tagger.UPTREND: st.success, tagger.DOWNTREND: st.error,
+        tagger.BREAK: st.warning, tagger.WEAKENING: st.warning,
+    }.get(reading.state, st.info)
+
+    shout(f"**{reading.state.upper()}** — {reading.says()}")
 
 # --- what the bar knows ------------------------------------------------------
 

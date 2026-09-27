@@ -30,6 +30,43 @@ python -m segments refit  <stem> --tolerance 0.5      # re-cut, no re-export
 Every command takes either CSV of an export, their shared stem, or a folder
 holding exactly one export.
 
+## The tagger
+
+The first thing here with an opinion. It reads the confirmed pivots at a bar,
+keeps the ones that are actual turns, names them HH / HL / LH / LL against their
+predecessors, and says what the structure is:
+
+```python
+from segments import load, tagger
+
+one = tagger.label(load(stem), 1200)
+print(one.state, "-", one.says())
+# uptrend - Uptrend: HH 30498.88 at bar 1176 and HL 30434.75 at bar 1170
+```
+
+```bash
+python -m segments tag <stem>            # the share of the history in each state
+python -m segments tag <stem> --bar 1200 # one bar, with its whole swing chain
+```
+
+States: `uptrend`, `downtrend`, `weakening` (a trend whose pushes are shrinking
+or whose pullbacks are deepening), `break` (a **close** beyond the protective
+swing), `range`, `unclear`. Every label carries its reason as data, with
+`says()` rendering the sentence - so the stats can group by rule and the chart
+can still explain itself.
+
+Two decisions worth knowing about:
+
+- **A pivot is not always a turn.** Two rising pieces of different steepness
+  meet at a bend, and a bend is not a swing high. Only reversals become swings.
+- **The protective level is the swing before the last extreme**, not the newest
+  one. The newest low may be one bar old with nothing built on it; protecting
+  that made a quarter of all MNQ bars a "break", which is another way of saying
+  it said nothing.
+
+Thresholds live in `tagger.Rules`, in ATRs and ratios, never ticks. The defaults
+are a starting point. Argue with them against a long export.
+
 ## The viewer
 
 ```bash
@@ -48,6 +85,9 @@ What it is for is the decisions that come before it:
   segmentation — what happened next *to the read you made*, not a tidier read of
   the same chart. The game's answer key, wired up early.
 - **Show the segments** off is the chart without training wheels.
+- **Classify** puts the tagger's reading on the page: the swing names at each
+  turn, the protective level drawn across, and the state with its reason. The
+  rules themselves are sliders, so a threshold can be argued with on the spot.
 - The numbers under it say how late the newest turn was seen, and the lag panel
   turns that into the number that matters: how far into the following leg a turn
   becomes trustworthy.
@@ -81,8 +121,9 @@ belongs in a report, never in a feature.
 | `dataset.py` | loads both CSVs and the JSON header; `check()` refuses files that cannot mean what they claim |
 | `replay.py` | the causal reconstruction, plus the lag and leg measurements |
 | `fit.py` | the port of `SegmentFit.cs`: the three methods, the causal sweep, `refit` and `verify` |
+| `tagger.py` | the rules: swings from pivots, and what state the market is in at a bar |
 | `plot.py` | a static picture of one bar's view, and a contact sheet of several |
-| `__main__.py` | `report`, `plot`, `sheet`, `verify`, `refit`, `list` |
+| `__main__.py` | `report`, `plot`, `sheet`, `tag`, `verify`, `refit`, `list` |
 
 ## Reading the report
 
@@ -157,6 +198,6 @@ Two things will differ legitimately, and knowing which is which saves an hour:
 
 ## Next
 
-The tagger — the first thing here that has an opinion rather than a measurement.
-It reads `replay.walk`, only confirmed pivots, and labels every bar with a
-reason. See [BRIEF.md](BRIEF.md) step 2.
+The outcome labeler — triple barrier from bar N, and the first honest question:
+how often does a break of structure on MNQ actually reverse? Then the game.
+See [BRIEF.md](BRIEF.md) steps 3 to 5.

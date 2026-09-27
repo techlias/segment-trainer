@@ -4,6 +4,7 @@
     python -m segments plot    <stem> --bar 4000 --history 150 --reveal 30
     python -m segments sheet   <stem> --count 8
     python -m segments list    <folder>
+    python -m segments tag     <stem> [--bar N]
     python -m segments verify  <stem>
     python -m segments refit   <stem> --tolerance 0.5 --out <folder>
 
@@ -21,7 +22,7 @@ from pathlib import Path
 import pandas as pd
 
 from . import dataset as dataset_module
-from . import fit, plot, replay
+from . import fit, plot, replay, tagger
 
 
 def _resolve(target: str) -> Path:
@@ -163,7 +164,7 @@ def _stem(meta) -> str:
         f"-t{meta.tolerance:g}-m{meta.minbars}-w{meta.window}"
     )
 
-    for bad in '<>:"/\|?*':
+    for bad in r'<>:"/\|?*':
         name = name.replace(bad, "_")
 
     return name.replace(" ", "_")
@@ -194,6 +195,41 @@ def refit(args) -> None:
     if not summary.empty:
         print(f"settled after {summary['lag_median']:.0f} bars (median), "
               f"{summary['pivots']:.0f} pivots stuck, {summary['withdrawn']:.0f} withdrawn")
+
+
+def tag(args) -> None:
+    data = _load(args.target)
+    rules = tagger.Rules()
+
+    if args.bar is not None:
+        one = tagger.label(data, args.bar, rules)
+        print(one.says())
+        print()
+        for swing in one.swings:
+            print(f"  bar {swing.bar:>6}  {swing.kind:<5} {swing.price:>12.2f}  "
+                  f"{'high' if swing.high else 'low':<5} seen {swing.age} bars late")
+        if one.protective is not None:
+            print()
+            print(f"  protective level {one.protective:.2f} from bar {one.protective_bar}")
+        return
+
+    table = tagger.table(data, rules)
+    states = table["state"]
+    runs = (states != states.shift()).cumsum()
+    spans = states.groupby(runs).size()
+
+    print(f"{len(table)} bars")
+    print()
+    print("SHARE OF THE HISTORY")
+    for state, share in tagger.shares(data, rules).items():
+        inside = states[states == state]
+        span = spans[runs.loc[inside.index].unique()].median() if len(inside) else 0
+        print(f"  {state:<10} {share:>6.1%}   {len(inside):>5} bars, runs of {span:.0f}")
+
+    print()
+    print("  A tagger that calls nearly everything one state is not describing the")
+    print("  market. Read the run lengths too: a state that never lasts is a state")
+    print("  no rule can be built on.")
 
 
 def list_exports(args) -> None:
@@ -251,6 +287,10 @@ def main(argv: list[str] | None = None) -> int:
                      help="recompute the ATR, only correct if the export starts at bar 0")
     cut.add_argument("--out", default=None, help="folder for the new pair (default: beside the original)")
     cut.set_defaults(run=refit)
+
+    tagged = shared(commands.add_parser("tag", help="the tagger's reading: one bar, or the whole history"))
+    tagged.add_argument("--bar", type=int, default=None, help="one bar, with its swings (default: the lot)")
+    tagged.set_defaults(run=tag)
 
     listed = commands.add_parser("list", help="every export in a folder")
     listed.add_argument("folder")

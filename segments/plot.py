@@ -26,6 +26,7 @@ UP = "#3aa76d"
 DOWN = "#cc5555"
 PROVISIONAL = "#8a8f98"
 HIDDEN = "#d9dce1"
+LEVEL = "#b07d2b"
 
 
 def draw(
@@ -105,6 +106,53 @@ def draw(
     )
     ax.set_xlabel("bar")
     ax.grid(True, alpha=0.15)
+
+    return ax
+
+
+def annotate(ax: "matplotlib.axes.Axes", label, right: int | None = None) -> "matplotlib.axes.Axes":
+    """Puts the tagger's reading on a chart already drawn.
+
+    Two things, and no more: what each turn was called - HH, HL, LH, LL - and
+    the protective level, the one price has to close through for the structure
+    to be broken. Those are the two things a person reading the chart is being
+    asked to see, and a third would start hiding them.
+    """
+    left, edge = ax.get_xlim()
+
+    for swing in label.swings:
+        if swing.bar < left or swing.kind == "first":
+            continue
+
+        ax.annotate(
+            swing.kind,
+            (swing.bar, swing.price),
+            textcoords="offset points",
+            xytext=(0, 9 if swing.high else -16),
+            ha="center",
+            fontsize=8,
+            color="#2c3038",
+        )
+
+    if label.protective is not None:
+        ax.hlines(
+            label.protective,
+            max(label.protective_bar, left),
+            right if right is not None else edge,
+            color=LEVEL,
+            linewidth=1.2,
+            linestyle="--",
+            zorder=2,
+        )
+        ax.annotate(
+            "protective",
+            (right if right is not None else edge, label.protective),
+            textcoords="offset points",
+            xytext=(-4, 4),
+            ha="right",
+            fontsize=8,
+            color=LEVEL,
+        )
 
     return ax
 
