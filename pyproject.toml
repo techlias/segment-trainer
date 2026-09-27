@@ -15,6 +15,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=7.4"]
+ui = ["streamlit>=1.40"]
 
 [project.scripts]
 segments = "segments.__main__:main"

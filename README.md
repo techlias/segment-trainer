@@ -30,6 +30,28 @@ python -m segments refit  <stem> --tolerance 0.5      # re-cut, no re-export
 Every command takes either CSV of an export, their shared stem, or a folder
 holding exactly one export.
 
+## The viewer
+
+```bash
+.venv/Scripts/python -m pip install -e ".[dev,ui]"
+.venv/Scripts/streamlit run viewer.py
+```
+
+A chart you can scrub through, one bar at a time, showing only what that bar
+could know. No labels — nothing here has an opinion until the tagger is written.
+What it is for is the decisions that come before it:
+
+- **Tolerance, method, window** in the sidebar re-cut the bars live (cached, so
+  the slider does not pay for it), which is how you find the setting that draws
+  the legs you actually read.
+- **Reveal** draws the next few bars in grey without re-reading the
+  segmentation — what happened next *to the read you made*, not a tidier read of
+  the same chart. The game's answer key, wired up early.
+- **Show the segments** off is the chart without training wheels.
+- The numbers under it say how late the newest turn was seen, and the lag panel
+  turns that into the number that matters: how far into the following leg a turn
+  becomes trustworthy.
+
 ## The one rule
 
 Anything that could ever feed a label, a question or a feature comes from
