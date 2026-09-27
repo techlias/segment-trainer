@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Reading the Structure</title>
+<title>Leer la Estructura</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
@@ -211,7 +211,7 @@ li { margin: 0 0 8px; }
 dl.terms { margin: 0 0 22px; display: grid; gap: 0; border-top: 1px solid var(--rule); }
 dl.terms > div {
 	display: grid;
-	grid-template-columns: 190px minmax(0, 1fr);
+	grid-template-columns: 200px minmax(0, 1fr);
 	gap: 8px 22px;
 	padding: 13px 0;
 	border-bottom: 1px solid var(--rule);
@@ -342,6 +342,7 @@ footer a { color: var(--ink-2); }
 	main > section > .cards, main > section > ul { padding-left: 0; margin-left: 0; }
 	h2 { grid-template-columns: minmax(0, 1fr); }
 	h2 .num { display: block; margin-bottom: 2px; }
+	dl.terms > div { grid-template-columns: minmax(0, 1fr); }
 }
 </style>
 
@@ -349,64 +350,72 @@ footer a { color: var(--ink-2); }
 
 <header class="masthead">
 	<div>
-		<p class="eyebrow">Segment strategy &middot; the trainer</p>
-		<h1>Reading the Structure</h1>
-		<p class="standfirst">Everything on the viewer page, what each mark means, and the vocabulary the tagger
-		argues in &mdash; higher highs, weakening, break of structure, and the protective level that decides it.</p>
+		<p class="eyebrow">Segment strategy &middot; el entrenador</p>
+		<h1>Leer la Estructura</h1>
+		<p class="standfirst">Todo lo que hay en la página del visor, qué significa cada marca, y el
+		vocabulario con el que discute el clasificador &mdash; máximos crecientes, pérdida de fuerza,
+		ruptura de estructura, y el nivel protector que lo decide todo.</p>
 	</div>
 	<div class="masthead-meta">
-		<b>English</b> &middot; <a href="reading-the-chart.es.html">Español</a><br>
+		<a href="reading-the-chart.html">English</a> &middot; <b>Español</b><br>
 		<b>viewer.py</b><br>
 		<b>segments/tagger.py</b><br>
-		MNQ &middot; any timeframe
+		MNQ &middot; cualquier temporalidad
 	</div>
 </header>
 
-<nav class="rail" aria-label="Contents">
+<nav class="rail" aria-label="Contenido">
 	<ol>
-		<li><a href="#page"><span>01</span> The page</a></li>
-		<li><a href="#chart"><span>02</span> The chart</a></li>
-		<li><a href="#words"><span>03</span> The vocabulary</a></li>
-		<li><a href="#states"><span>04</span> The six states</a></li>
-		<li><a href="#protective"><span>05</span> The protective level</a></li>
-		<li><a href="#event"><span>06</span> Reading an event</a></li>
-		<li><a href="#numbers"><span>07</span> The numbers</a></li>
-		<li><a href="#knobs"><span>08</span> The knobs</a></li>
-		<li><a href="#traps"><span>09</span> Three traps</a></li>
+		<li><a href="#page"><span>01</span> La página</a></li>
+		<li><a href="#chart"><span>02</span> El gráfico</a></li>
+		<li><a href="#words"><span>03</span> El vocabulario</a></li>
+		<li><a href="#states"><span>04</span> Los seis estados</a></li>
+		<li><a href="#protective"><span>05</span> El nivel protector</a></li>
+		<li><a href="#event"><span>06</span> Leer un evento</a></li>
+		<li><a href="#numbers"><span>07</span> Los números</a></li>
+		<li><a href="#knobs"><span>08</span> Los mandos</a></li>
+		<li><a href="#traps"><span>09</span> Tres trampas</a></li>
 	</ol>
 </nav>
 
 <main>
 
+<div class="callout" style="margin-left:0;margin-top:0">
+	<span class="tag">Sobre los términos en inglés</span>
+	<p>La interfaz escribe sus etiquetas en inglés: <code>HH</code>, <code>HL</code>,
+	<code>uptrend</code>, <code>break</code>. Aquí se explican en español pero se conservan tal cual,
+	porque son exactamente lo que vas a leer en pantalla.</p>
+</div>
+
 <!-- ============================================================ 01 -->
 <section id="page">
-	<h2><span class="num">01</span> The page</h2>
-	<p class="lede">Four regions. The chart is the evidence, the banner is the reading, the numbers are
-	the state of play, and the sidebar decides what is being read.</p>
+	<h2><span class="num">01</span> La página</h2>
+	<p class="lede">Cuatro zonas. El gráfico es la evidencia, la banda de color es la lectura, los
+	números son el estado de la partida, y la barra lateral decide qué se está leyendo.</p>
 
 	<figure>
 		<div class="figbody">
-			<svg viewBox="0 0 900 330" role="img" aria-label="Layout of the viewer page">
+			<svg viewBox="0 0 900 330" role="img" aria-label="Disposición de la página del visor">
 				<rect x="8" y="8" width="200" height="314" rx="3" fill="var(--surface-2)" stroke="var(--rule)"/>
-				<text x="20" y="32" font-size="12" fill="var(--accent)">SIDEBAR</text>
-				<text x="20" y="54" font-size="11" fill="var(--ink-2)">dataset</text>
-				<text x="20" y="76" font-size="11" fill="var(--ink-2)">the cut &mdash; method,</text>
-				<text x="20" y="92" font-size="11" fill="var(--ink-2)">tolerance, window</text>
-				<text x="20" y="114" font-size="11" fill="var(--ink-2)">the view &mdash; history,</text>
-				<text x="20" y="130" font-size="11" fill="var(--ink-2)">reveal, toggles</text>
-				<text x="20" y="152" font-size="11" fill="var(--ink-2)">the rules &mdash; the four</text>
-				<text x="20" y="168" font-size="11" fill="var(--ink-2)">tagger thresholds</text>
+				<text x="20" y="32" font-size="12" fill="var(--accent)">BARRA LATERAL</text>
+				<text x="20" y="54" font-size="11" fill="var(--ink-2)">conjunto de datos</text>
+				<text x="20" y="76" font-size="11" fill="var(--ink-2)">el corte &mdash; método,</text>
+				<text x="20" y="92" font-size="11" fill="var(--ink-2)">tolerancia, ventana</text>
+				<text x="20" y="114" font-size="11" fill="var(--ink-2)">la vista &mdash; historia,</text>
+				<text x="20" y="130" font-size="11" fill="var(--ink-2)">revelado, interruptores</text>
+				<text x="20" y="152" font-size="11" fill="var(--ink-2)">las reglas &mdash; los cuatro</text>
+				<text x="20" y="168" font-size="11" fill="var(--ink-2)">umbrales del clasificador</text>
 
 				<rect x="228" y="8" width="664" height="34" rx="3" fill="var(--surface)" stroke="var(--rule)"/>
-				<text x="244" y="30" font-size="12" fill="var(--ink-2)">&#9664;&nbsp;&nbsp;&#9654;&nbsp;&nbsp;random&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bar slider &mdash; where you are standing</text>
+				<text x="244" y="30" font-size="12" fill="var(--ink-2)">&#9664;&nbsp;&nbsp;&#9654;&nbsp;&nbsp;random&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;deslizador &mdash; en qué barra estás parado</text>
 
 				<rect x="228" y="52" width="664" height="150" rx="3" fill="var(--surface)" stroke="var(--rule)"/>
-				<text x="244" y="74" font-size="12" fill="var(--accent)">THE CHART</text>
+				<text x="244" y="74" font-size="12" fill="var(--accent)">EL GRÁFICO</text>
 				<polyline points="250,170 300,120 340,145 400,95 440,120 500,80" fill="none" stroke="var(--win)" stroke-width="2.5"/>
 				<polyline points="500,80 540,110" fill="none" stroke="var(--even)" stroke-width="2.5" stroke-dasharray="5 4"/>
 				<polyline points="540,110 580,125 620,100 660,130" fill="none" stroke="var(--ghost)" stroke-width="1.8"/>
 				<line x1="540" y1="60" x2="540" y2="195" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="2 3"/>
-				<text x="548" y="192" font-size="10" fill="var(--ink-3)">now</text>
+				<text x="548" y="192" font-size="10" fill="var(--ink-3)">ahora</text>
 
 				<rect x="228" y="212" width="664" height="36" rx="3" fill="var(--accent-soft)" stroke="var(--accent)"/>
 				<text x="244" y="235" font-size="12" fill="var(--accent)">UPTREND &mdash; HH 30498.88 at bar 1176 and HL 30434.75 at bar 1170</text>
@@ -422,43 +431,40 @@ footer a { color: var(--ink-2); }
 				<text x="694" y="304" font-size="15" fill="var(--ink)">24 bars ago</text>
 			</svg>
 		</div>
-		<figcaption>The banner colour is the state, so the reading lands before it is read: green for an
-		uptrend, red for a downtrend, amber for weakening or a break, grey for a range or unclear.</figcaption>
+		<figcaption>El color de la banda <em>es</em> el estado, para que la lectura llegue antes de
+		leerla: verde para tendencia alcista, rojo para bajista, ámbar para pérdida de fuerza o
+		ruptura, y gris para rango o indefinido.</figcaption>
 	</figure>
 
 	<div class="callout">
-		<span class="tag">The one rule</span>
-		<p>Every frame is built from what that bar knew and nothing after it. Scrubbing back to bar 900
-		shows you bar 900's chart, not today's chart with the right half hidden. That is the whole
-		point: it is the only honest way to ask yourself what you would have read at the time.</p>
+		<span class="tag">La regla única</span>
+		<p>Cada fotograma se construye con lo que esa barra sabía, y con nada posterior. Retroceder a la
+		barra 900 te enseña el gráfico de la barra 900, no el gráfico de hoy con la mitad derecha
+		tapada. Ese es todo el propósito: es la única forma honesta de preguntarte qué habrías leído en
+		su momento.</p>
 	</div>
 </section>
 
 <!-- ============================================================ 02 -->
 <section id="chart">
-	<h2><span class="num">02</span> The chart</h2>
-	<p class="lede">Straight lines instead of bars. Each line is a stretch of price that one straight
-	line can speak for; where two meet, the market turned.</p>
+	<h2><span class="num">02</span> El gráfico</h2>
+	<p class="lede">Líneas rectas en lugar de velas. Cada línea es un tramo de precio que una sola recta
+	puede representar; donde dos se encuentran, el mercado giró.</p>
 
 	<figure>
 		<div class="figbody">
-			<svg viewBox="0 0 900 300" role="img" aria-label="Anatomy of the segment chart">
-				<!-- protective level -->
+			<svg viewBox="0 0 900 300" role="img" aria-label="Anatomía del gráfico de segmentos">
 				<line x1="210" y1="180" x2="700" y2="180" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="7 5"/>
-				<text x="700" y="174" font-size="11" fill="var(--accent)" text-anchor="end">protective level</text>
+				<text x="700" y="174" font-size="11" fill="var(--accent)" text-anchor="end">nivel protector</text>
 
-				<!-- the confirmed path -->
 				<polyline points="60,230 150,140" fill="none" stroke="var(--win)" stroke-width="3"/>
 				<polyline points="150,140 210,180" fill="none" stroke="var(--loss)" stroke-width="3"/>
 				<polyline points="210,180 310,80" fill="none" stroke="var(--win)" stroke-width="3"/>
 				<polyline points="310,80 380,125" fill="none" stroke="var(--loss)" stroke-width="3"/>
-				<!-- provisional -->
 				<polyline points="380,125 470,95" fill="none" stroke="var(--even)" stroke-width="3" stroke-dasharray="7 5"/>
-				<!-- reveal -->
 				<polyline points="470,95 520,130 560,105 610,150 660,60 700,80" fill="none" stroke="var(--ghost)" stroke-width="2"/>
 				<line x1="470" y1="30" x2="470" y2="270" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="2 4"/>
 
-				<!-- vertices -->
 				<circle cx="150" cy="140" r="5.5" fill="var(--ink)"/>
 				<circle cx="210" cy="180" r="5.5" fill="var(--ink)"/>
 				<circle cx="310" cy="80" r="5.5" fill="var(--ink)"/>
@@ -469,237 +475,242 @@ footer a { color: var(--ink-2); }
 				<text x="310" y="66" font-size="12" fill="var(--ink)" text-anchor="middle">HH</text>
 				<text x="380" y="148" font-size="12" fill="var(--ink)" text-anchor="middle">HL</text>
 
-				<!-- annotations -->
-				<text x="60" y="258" font-size="11" fill="var(--ink-3)">older &rarr;</text>
-				<text x="478" y="268" font-size="11" fill="var(--ink-3)">the bar you are standing on</text>
-				<text x="600" y="268" font-size="11" fill="var(--ghost)">revealed &mdash; the answer</text>
-				<text x="418" y="86" font-size="11" fill="var(--even)" text-anchor="middle">leg in</text>
-				<text x="418" y="100" font-size="11" fill="var(--even)" text-anchor="middle">progress</text>
-				<text x="250" y="118" font-size="11" fill="var(--win)">a push</text>
-				<text x="336" y="112" font-size="11" fill="var(--loss)">a pullback</text>
+				<text x="60" y="258" font-size="11" fill="var(--ink-3)">más antiguo &rarr;</text>
+				<text x="478" y="268" font-size="11" fill="var(--ink-3)">la barra donde estás parado</text>
+				<text x="600" y="268" font-size="11" fill="var(--ghost)">revelado &mdash; la respuesta</text>
+				<text x="418" y="86" font-size="11" fill="var(--even)" text-anchor="middle">tramo en</text>
+				<text x="418" y="100" font-size="11" fill="var(--even)" text-anchor="middle">curso</text>
+				<text x="244" y="118" font-size="11" fill="var(--win)">impulso</text>
+				<text x="332" y="112" font-size="11" fill="var(--loss)">retroceso</text>
 			</svg>
 		</div>
-		<figcaption>Green rises, red falls, grey is a leg that covered less than half an ATR either way.
-		The dashed grey leg on the right has no end yet. Everything past the dotted line is the reveal,
-		drawn only when you ask for it.</figcaption>
+		<figcaption>Verde sube, rojo baja, gris es un tramo que no recorrió ni media ATR en ninguna
+		dirección. El tramo discontinuo de la derecha todavía no tiene final. Todo lo que hay pasada la
+		línea de puntos es el revelado, que solo se dibuja si lo pides.</figcaption>
 	</figure>
 
-	<h3>What each mark is</h3>
+	<h3>Qué es cada marca</h3>
 	<dl class="terms">
 		<div>
-			<dt>Solid line<small>green / red / grey</small></dt>
-			<dd>A <b>segment</b>: a stretch of bars one straight line speaks for, within the tolerance.
-			Colour is direction; grey means it went nowhere much.</dd>
+			<dt>Línea continua<small>verde / roja / gris</small></dt>
+			<dd>Un <b>segmento</b>: un tramo de barras que una sola recta representa dentro de la
+			tolerancia. El color es la dirección; gris significa que apenas fue a ninguna parte.</dd>
 		</div>
 		<div>
-			<dt>Black dot</dt>
-			<dd>A <b>pivot</b>, where two segments meet. Confirmed &mdash; it was knowable at this bar.</dd>
+			<dt>Punto negro</dt>
+			<dd>Un <b>pivote</b>, donde se juntan dos segmentos. Confirmado: ya era conocible en esa
+			barra.</dd>
 		</div>
 		<div>
-			<dt>Dashed grey leg</dt>
-			<dd>The <b>leg in progress</b>. It runs from the newest confirmed turn to where you are
-			standing, and it is the only piece that can still change.</dd>
+			<dt>Tramo discontinuo gris</dt>
+			<dd>El <b>tramo en curso</b>. Va desde el último giro confirmado hasta donde estás parado, y
+			es la única pieza que todavía puede cambiar.</dd>
 		</div>
 		<div>
-			<dt>Gold dashed line</dt>
-			<dd>The <b>protective level</b> &mdash; section 05. Close through it and the trend claim dies.</dd>
+			<dt>Línea dorada</dt>
+			<dd>El <b>nivel protector</b> &mdash; sección 05. Un cierre al otro lado y la tendencia queda
+			desmentida.</dd>
 		</div>
 		<div>
 			<dt>HH HL LH LL<small>EQH, EQL</small></dt>
-			<dd>What each turn was, against the previous turn of the same kind. EQ means "the same level,
-			within noise".</dd>
+			<dd>Qué fue cada giro frente al giro anterior del mismo tipo. EQ significa "el mismo nivel,
+			dentro del ruido".</dd>
 		</div>
 		<div>
-			<dt>Pale grey path</dt>
-			<dd>The <b>reveal</b>: what happened next. Shown only when the reveal slider is above zero.</dd>
+			<dt>Trazo gris pálido</dt>
+			<dd>El <b>revelado</b>: lo que pasó después. Solo aparece si subes el deslizador de revelado.</dd>
 		</div>
 	</dl>
 </section>
 
 <!-- ============================================================ 03 -->
 <section id="words">
-	<h2><span class="num">03</span> The vocabulary</h2>
-	<p class="lede">Six words carry the whole method. Four of them are about the shape, two about
-	how late you learn it.</p>
+	<h2><span class="num">03</span> El vocabulario</h2>
+	<p class="lede">Seis palabras sostienen todo el método. Cuatro hablan de la forma; dos, de cuánto
+	tardas en enterarte.</p>
 
 	<dl class="terms">
 		<div>
-			<dt>swing high<br>swing low</dt>
-			<dd>A turn: price went up into it and down out of it, or the reverse. Not every pivot is
-			one &mdash; see the bend, below.</dd>
+			<dt>máximo relevante<br>mínimo relevante<small>swing high / swing low</small></dt>
+			<dd>Un giro: el precio subió hasta él y bajó desde él, o al revés. No todo pivote lo es
+			&mdash; ver el codo, más abajo.</dd>
 		</div>
 		<div>
 			<dt>HH / HL<small>higher high, higher low</small></dt>
-			<dd>This swing high is above the previous swing high; this low above the previous low.
-			<b>Both together is an uptrend</b>, and that is the whole of Dow's definition.</dd>
+			<dd>Máximo más alto que el máximo anterior; mínimo más alto que el mínimo anterior.
+			<b>Los dos juntos son una tendencia alcista</b>, y eso es toda la definición de Dow.</dd>
 		</div>
 		<div>
 			<dt>LH / LL<small>lower high, lower low</small></dt>
-			<dd>The mirror. Both together is a downtrend.</dd>
+			<dd>El espejo: máximo más bajo y mínimo más bajo. Los dos juntos son tendencia bajista.</dd>
 		</div>
 		<div>
 			<dt>EQH / EQL<small>equal high, equal low</small></dt>
-			<dd>Within the noise band of the previous one &mdash; a double top rather than a new extreme.
-			Without this band, one tick of noise would make a trend.</dd>
+			<dd>Dentro de la banda de ruido del anterior &mdash; un doble techo, no un extremo nuevo. Sin
+			esa banda, un tick de ruido bastaría para fabricar una tendencia.</dd>
 		</div>
 		<div>
-			<dt>push</dt>
-			<dd>A leg in the trend's direction. In an uptrend, a low to a high.</dd>
+			<dt>impulso<small>push</small></dt>
+			<dd>Un tramo a favor de la tendencia. En una alcista, de un mínimo a un máximo.</dd>
 		</div>
 		<div>
-			<dt>pullback</dt>
-			<dd>A leg against it. In an uptrend, a high back down to a low.</dd>
+			<dt>retroceso<small>pullback</small></dt>
+			<dd>Un tramo en contra. En una alcista, de un máximo de vuelta a un mínimo.</dd>
 		</div>
 		<div>
-			<dt>ATR<small>average true range</small></dt>
-			<dd>The size of an average bar right now. Every threshold here is quoted in ATRs rather
-			than ticks, so the same setting means the same thing in a fast session and a dead one.</dd>
+			<dt>ATR<small>rango verdadero medio</small></dt>
+			<dd>El tamaño de una barra media ahora mismo. Todos los umbrales están en ATR y no en ticks,
+			para que el mismo ajuste signifique lo mismo en una sesión rápida y en una muerta.</dd>
 		</div>
 		<div>
-			<dt>confirmation lag</dt>
-			<dd>Bars between a turn happening and it being trustworthy. It is never zero, and every
-			rule you read inherits it.</dd>
+			<dt>retraso de<br>confirmación</dt>
+			<dd>Barras entre que un giro ocurre y que se puede confiar en él. Nunca es cero, y toda regla
+			que leas lo hereda.</dd>
 		</div>
 	</dl>
 
-	<h3>A bend is not a turn</h3>
+	<h3>Un codo no es un giro</h3>
 	<figure>
 		<div class="figbody">
-			<svg viewBox="0 0 900 200" role="img" aria-label="A bend compared with a turn">
+			<svg viewBox="0 0 900 200" role="img" aria-label="Un codo comparado con un giro">
 				<polyline points="60,160 240,120" fill="none" stroke="var(--win)" stroke-width="3"/>
 				<polyline points="240,120 380,40" fill="none" stroke="var(--win)" stroke-width="3"/>
 				<circle cx="240" cy="120" r="5.5" fill="none" stroke="var(--ink-3)" stroke-width="2"/>
-				<text x="240" y="150" font-size="12" fill="var(--ink-3)" text-anchor="middle">bend &mdash; not a swing</text>
+				<text x="240" y="150" font-size="12" fill="var(--ink-3)" text-anchor="middle">codo &mdash; no es un giro</text>
 
 				<polyline points="520,160 660,60" fill="none" stroke="var(--win)" stroke-width="3"/>
 				<polyline points="660,60 820,140" fill="none" stroke="var(--loss)" stroke-width="3"/>
 				<circle cx="660" cy="60" r="5.5" fill="var(--ink)"/>
 				<text x="660" y="44" font-size="12" fill="var(--ink)" text-anchor="middle">HH</text>
-				<text x="660" y="170" font-size="12" fill="var(--ink-2)" text-anchor="middle">turn &mdash; a swing high</text>
+				<text x="660" y="170" font-size="12" fill="var(--ink-2)" text-anchor="middle">giro &mdash; un máximo relevante</text>
 			</svg>
 		</div>
-		<figcaption>Two rising segments of different steepness meet at a pivot where price never
-		reversed. That is a fact about the fit, not about the market, so the tagger drops it. You will
-		still see the dot on the chart, without a name beside it.</figcaption>
+		<figcaption>Dos segmentos ascendentes de pendiente distinta se juntan en un pivote donde el
+		precio nunca se dio la vuelta. Eso es un hecho sobre el ajuste, no sobre el mercado, así que el
+		clasificador lo descarta. El punto seguirá dibujado, pero sin nombre al lado.</figcaption>
 	</figure>
 </section>
 
 <!-- ============================================================ 04 -->
 <section id="states">
-	<h2><span class="num">04</span> The six states</h2>
-	<p class="lede">What the banner can say, the rule behind it, and the sentence it prints.</p>
+	<h2><span class="num">04</span> Los seis estados</h2>
+	<p class="lede">Lo que puede decir la banda, la regla que hay detrás, y la frase exacta que imprime.</p>
 
 	<div class="cards">
 		<div class="card">
-			<h4 class="up">Uptrend</h4>
-			<svg viewBox="0 0 260 90" role="img" aria-label="A rising stair">
+			<h4 class="up">uptrend &middot; alcista</h4>
+			<svg viewBox="0 0 260 90" role="img" aria-label="Escalera ascendente">
 				<polyline points="15,75 70,35 100,52 165,18 195,34 245,10" fill="none" stroke="var(--win)" stroke-width="2.5"/>
 				<circle cx="70" cy="35" r="3.5" fill="var(--ink)"/><circle cx="100" cy="52" r="3.5" fill="var(--ink)"/>
 				<circle cx="165" cy="18" r="3.5" fill="var(--ink)"/><circle cx="195" cy="34" r="3.5" fill="var(--ink)"/>
 				<text x="165" y="12" font-size="9" fill="var(--ink)" text-anchor="middle">HH</text>
 				<text x="195" y="47" font-size="9" fill="var(--ink)" text-anchor="middle">HL</text>
 			</svg>
-			<p class="rule">The last swing high is <b>higher</b> than the one before, and the last swing
-			low is higher too.</p>
+			<p class="rule">El último máximo es <b>más alto</b> que el anterior, y el último mínimo
+			también.</p>
 			<p class="says">Uptrend: HH 30498.88 at bar 1176 and HL 30434.75 at bar 1170</p>
 		</div>
 
 		<div class="card">
-			<h4 class="down">Downtrend</h4>
-			<svg viewBox="0 0 260 90" role="img" aria-label="A falling stair">
+			<h4 class="down">downtrend &middot; bajista</h4>
+			<svg viewBox="0 0 260 90" role="img" aria-label="Escalera descendente">
 				<polyline points="15,12 70,52 100,34 165,70 195,56 245,80" fill="none" stroke="var(--loss)" stroke-width="2.5"/>
 				<circle cx="70" cy="52" r="3.5" fill="var(--ink)"/><circle cx="100" cy="34" r="3.5" fill="var(--ink)"/>
 				<circle cx="165" cy="70" r="3.5" fill="var(--ink)"/><circle cx="195" cy="56" r="3.5" fill="var(--ink)"/>
 				<text x="165" y="83" font-size="9" fill="var(--ink)" text-anchor="middle">LL</text>
 				<text x="195" y="49" font-size="9" fill="var(--ink)" text-anchor="middle">LH</text>
 			</svg>
-			<p class="rule">A <b>lower high and a lower low</b>. The mirror of the above, and nothing more.</p>
+			<p class="rule">Un <b>máximo más bajo y un mínimo más bajo</b>. El espejo del anterior, y nada
+			más.</p>
 			<p class="says">Downtrend: LH 30801.12 at bar 1482 and LL 30666.50 at bar 1472</p>
 		</div>
 
 		<div class="card">
-			<h4 class="flat">Range</h4>
-			<svg viewBox="0 0 260 90" role="img" aria-label="Swings that disagree">
+			<h4 class="flat">range &middot; rango</h4>
+			<svg viewBox="0 0 260 90" role="img" aria-label="Giros que no concuerdan">
 				<line x1="15" y1="18" x2="245" y2="18" stroke="var(--rule-strong)" stroke-width="1" stroke-dasharray="4 4"/>
 				<line x1="15" y1="72" x2="245" y2="72" stroke="var(--rule-strong)" stroke-width="1" stroke-dasharray="4 4"/>
 				<polyline points="15,60 60,20 100,66 140,24 180,70 220,26 245,58" fill="none" stroke="var(--even)" stroke-width="2.5"/>
 				<circle cx="60" cy="20" r="3.5" fill="var(--ink)"/><circle cx="140" cy="24" r="3.5" fill="var(--ink)"/>
 				<circle cx="100" cy="66" r="3.5" fill="var(--ink)"/><circle cx="180" cy="70" r="3.5" fill="var(--ink)"/>
 			</svg>
-			<p class="rule">The swings <b>disagree</b> &mdash; a higher low with a lower high, or a level
-			that repeated. Price is held between the last major high and low.</p>
+			<p class="rule">Los giros <b>no concuerdan</b> &mdash; un mínimo más alto con un máximo más
+			bajo, o un nivel que se repite. El precio queda contenido entre el último máximo y el último
+			mínimo importantes.</p>
 			<p class="says">Range: EQH and HL disagree, price held between 30667.50 and 31045.00</p>
 		</div>
 
 		<div class="card">
-			<h4 class="gold">Weakening</h4>
-			<svg viewBox="0 0 260 90" role="img" aria-label="Pushes getting shorter">
+			<h4 class="gold">weakening &middot; pierde fuerza</h4>
+			<svg viewBox="0 0 260 90" role="img" aria-label="Impulsos cada vez más cortos">
 				<polyline points="15,78 70,26 100,46 150,30 180,48 220,38" fill="none" stroke="var(--win)" stroke-width="2.5"/>
 				<circle cx="70" cy="26" r="3.5" fill="var(--ink)"/><circle cx="100" cy="46" r="3.5" fill="var(--ink)"/>
 				<circle cx="150" cy="30" r="3.5" fill="var(--ink)"/><circle cx="180" cy="48" r="3.5" fill="var(--ink)"/>
 				<line x1="44" y1="78" x2="44" y2="26" stroke="var(--accent)" stroke-width="1.4"/>
 				<line x1="126" y1="46" x2="126" y2="30" stroke="var(--accent)" stroke-width="1.4"/>
-				<text x="58" y="60" font-size="9" fill="var(--accent)">big</text>
-				<text x="132" y="40" font-size="9" fill="var(--accent)">small</text>
+				<text x="56" y="60" font-size="9" fill="var(--accent)">grande</text>
+				<text x="132" y="40" font-size="9" fill="var(--accent)">pequeño</text>
 			</svg>
-			<p class="rule">Still a trend, but <b>running out of legs</b>: the newest push is much shorter
-			than the one before it, or the newest pullback gave back most of the push it retraced.</p>
+			<p class="rule">Sigue siendo tendencia, pero <b>se queda sin piernas</b>: el último impulso es
+			mucho más corto que el anterior, o el último retroceso devolvió casi todo lo que el impulso
+			había ganado.</p>
 			<p class="says">Weakening uptrend: the push into bar 50 ran 0.45 ATR against 1.80 before it</p>
 		</div>
 
 		<div class="card">
-			<h4 class="gold">Break</h4>
-			<svg viewBox="0 0 260 90" role="img" aria-label="A close through the protective level">
+			<h4 class="gold">break &middot; ruptura</h4>
+			<svg viewBox="0 0 260 90" role="img" aria-label="Un cierre atravesando el nivel protector">
 				<line x1="15" y1="52" x2="245" y2="52" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="6 4"/>
 				<polyline points="15,78 60,30 95,52 150,16 185,40" fill="none" stroke="var(--win)" stroke-width="2.5"/>
 				<polyline points="185,40 235,76" fill="none" stroke="var(--loss)" stroke-width="2.5"/>
 				<circle cx="95" cy="52" r="3.5" fill="var(--ink)"/><circle cx="150" cy="16" r="3.5" fill="var(--ink)"/>
 				<circle cx="228" cy="70" r="4" fill="var(--loss)"/>
-				<text x="228" y="86" font-size="9" fill="var(--loss)" text-anchor="middle">close</text>
+				<text x="228" y="86" font-size="9" fill="var(--loss)" text-anchor="middle">cierre</text>
 			</svg>
-			<p class="rule">A <b>close</b> beyond the protective swing. The one state that does not wait
-			for a new pivot &mdash; it can fire on the bar it happens.</p>
+			<p class="rule">Un <b>cierre</b> al otro lado del giro protegido. El único estado que no espera
+			a un pivote nuevo: puede saltar en la misma barra en que ocurre.</p>
 			<p class="says">Break: close 30809.00 at bar 1482 above the swing high 30803.88 from bar 1468</p>
 		</div>
 
 		<div class="card">
-			<h4 class="flat">Unclear</h4>
-			<svg viewBox="0 0 260 90" role="img" aria-label="Too few swings">
+			<h4 class="flat">unclear &middot; indefinido</h4>
+			<svg viewBox="0 0 260 90" role="img" aria-label="Demasiado pocos giros">
 				<polyline points="15,70 90,34 140,58" fill="none" stroke="var(--even)" stroke-width="2.5"/>
 				<polyline points="140,58 210,30" fill="none" stroke="var(--even)" stroke-width="2.5" stroke-dasharray="6 4"/>
 				<circle cx="90" cy="34" r="3.5" fill="var(--ink)"/><circle cx="140" cy="58" r="3.5" fill="var(--ink)"/>
 				<text x="228" y="40" font-size="20" fill="var(--ink-3)">?</text>
 			</svg>
-			<p class="rule">Fewer than four confirmed swings. <b>An answer, not a failure</b> &mdash; early in
-			the data, or after a long straight run, there is genuinely nothing to compare.</p>
+			<p class="rule">Menos de cuatro giros confirmados. <b>Es una respuesta, no un fallo</b>: al
+			principio de los datos, o tras un tramo largo y recto, sencillamente no hay nada que
+			comparar.</p>
 			<p class="says">Unclear: 3 confirmed swings, 4 needed</p>
 		</div>
 	</div>
 
 	<div class="callout">
-		<span class="tag">Order of precedence</span>
-		<p>A break outranks everything: if a close has gone through the level, that is the reading,
-		whatever the swings still say. Weakening outranks the plain trend, because a trend you are
-		told is tiring is more useful than one you are told is intact. Range and unclear are what is
-		left.</p>
+		<span class="tag">Orden de prioridad</span>
+		<p>La ruptura manda sobre todo lo demás: si un cierre ya atravesó el nivel, esa es la lectura,
+		digan lo que digan los giros. <em>Weakening</em> manda sobre la tendencia simple, porque una
+		tendencia que te avisan de que se cansa es más útil que una que te dicen que está intacta. Rango
+		e indefinido son lo que queda.</p>
 	</div>
 </section>
 
 <!-- ============================================================ 05 -->
 <section id="protective">
-	<h2><span class="num">05</span> The protective level</h2>
-	<p class="lede">The gold line is the one thing that would prove the trend wrong. It is drawn so you
-	can see the break before it happens.</p>
+	<h2><span class="num">05</span> El nivel protector</h2>
+	<p class="lede">La línea dorada es lo único que demostraría que la tendencia está equivocada. Se
+	dibuja para que veas venir la ruptura antes de que ocurra.</p>
 
-	<p>In an uptrend it is the swing low that the <em>last push up started from</em>. The trend is a
-	sequence of higher lows, so a close below that low breaks the sequence, and the claim with it. In a
-	downtrend it is the swing high before the last low.</p>
+	<p>En una tendencia alcista es el mínimo desde el que <em>arrancó el último impulso</em>. La
+	tendencia es una sucesión de mínimos crecientes, así que un cierre por debajo de ese mínimo rompe la
+	sucesión, y con ella la afirmación. En una bajista es el máximo anterior al último mínimo.</p>
 
 	<figure>
 		<div class="figbody">
-			<svg viewBox="0 0 900 240" role="img" aria-label="Which low is protected">
+			<svg viewBox="0 0 900 240" role="img" aria-label="Qué mínimo queda protegido">
 				<line x1="60" y1="160" x2="840" y2="160" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="7 5"/>
-				<text x="840" y="153" font-size="11.5" fill="var(--accent)" text-anchor="end">protected: the low the last push began at</text>
+				<text x="840" y="153" font-size="11.5" fill="var(--accent)" text-anchor="end">protegido: el mínimo donde empezó el último impulso</text>
 
 				<polyline points="60,200 180,110 260,160 420,50 520,105 640,30" fill="none" stroke="var(--win)" stroke-width="3"/>
 				<polyline points="640,30 760,120" fill="none" stroke="var(--loss)" stroke-width="3"/>
@@ -717,209 +728,214 @@ footer a { color: var(--ink-2); }
 				<text x="640" y="18" font-size="11.5" fill="var(--ink)" text-anchor="middle">HH</text>
 
 				<line x1="520" y1="105" x2="520" y2="215" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="2 4"/>
-				<text x="520" y="230" font-size="11" fill="var(--ink-3)" text-anchor="middle">not this one &mdash; nothing is built on it yet</text>
+				<text x="520" y="230" font-size="11" fill="var(--ink-3)" text-anchor="middle">este no &mdash; todavía no hay nada construido encima</text>
 			</svg>
 		</div>
-		<figcaption>The newest low is <em>not</em> the protected one. It may be a bar or two old with
-		nothing yet built on top of it, and protecting it turns every ordinary wiggle into a break of
-		structure &mdash; measured on MNQ, it called a quarter of all bars broken, which is another way
-		of saying it said nothing.</figcaption>
+		<figcaption>El mínimo más reciente <em>no</em> es el protegido. Puede tener una o dos barras de
+		vida y nada construido encima, y protegerlo convierte cualquier vaivén normal en una ruptura de
+		estructura: medido sobre MNQ, daba por rota la cuarta parte de todas las barras, que es otra
+		forma de decir que no decía nada.</figcaption>
 	</figure>
 
-	<p>Two things to read off it. First, it is the tagger's own falsification test, drawn on the chart:
-	the distance from price to that line is how much room the trend still has. Second, it is where a
-	stop would belong if you were trading the trend &mdash; a close there means the reason for the trade
-	no longer exists.</p>
+	<p>Dos cosas se leen ahí. La primera: es la prueba de falsación del propio clasificador, dibujada en
+	el gráfico &mdash; la distancia del precio a esa línea es el margen que le queda a la tendencia. La
+	segunda: es donde iría el stop si estuvieras operando esa tendencia; un cierre ahí significa que el
+	motivo de la operación ya no existe.</p>
 
-	<p>A <em>close</em>, not a touch. Price pokes through levels constantly; the close is the market's
-	considered opinion, and the break rule wants the close to clear the level by a margin as well
-	&mdash; a tenth of an ATR by default.</p>
+	<p>Un <em>cierre</em>, no un toque. El precio atraviesa niveles constantemente; el cierre es la
+	opinión meditada del mercado. Y la regla exige además un margen &mdash; una décima de ATR por
+	defecto &mdash; para no confundir un pinchazo con una ruptura.</p>
 </section>
 
 <!-- ============================================================ 06 -->
 <section id="event">
-	<h2><span class="num">06</span> Reading an event</h2>
-	<p class="lede">The sequence to watch for, and the order it arrives in. Press the step button and
-	take one bar at a time.</p>
+	<h2><span class="num">06</span> Leer un evento</h2>
+	<p class="lede">La secuencia que hay que vigilar, en el orden en que llega. Pulsa el botón de paso y
+	ve barra a barra.</p>
 
 	<div class="tablewrap">
 		<table>
-			<thead><tr><th style="width:180px">What you see</th><th>What it means</th></tr></thead>
+			<thead><tr><th style="width:190px">Lo que ves</th><th>Lo que significa</th></tr></thead>
 			<tbody>
 				<tr>
-					<td class="m">The dashed leg<br>stretches</td>
-					<td>Price is extending away from the newest turn. Nothing is confirmed while this is
-					happening &mdash; the leg has no end, and the tagger is still reading the structure
-					behind it.</td>
+					<td class="m">El tramo discontinuo<br>se alarga</td>
+					<td>El precio se aleja del último giro. Mientras eso pasa no hay nada confirmado: el
+					tramo no tiene final, y el clasificador sigue leyendo la estructura que hay detrás.</td>
 				</tr>
 				<tr>
-					<td class="m">A new black dot<br>appears</td>
-					<td>A turn has been confirmed, several bars after it actually happened. Watch where it
-					lands: if it comes in above the previous low, the uptrend just gained a higher low.</td>
+					<td class="m">Aparece un punto<br>negro nuevo</td>
+					<td>Se ha confirmado un giro, varias barras después de ocurrir. Mira dónde cae: si
+					entra por encima del mínimo anterior, la tendencia alcista acaba de ganar un mínimo
+					creciente.</td>
 				</tr>
 				<tr>
-					<td class="m">The gold line<br>jumps</td>
-					<td>The protected swing changed &mdash; a new push started, so a newer low now defines
-					the trend. The trend just gained room, or gave some up.</td>
+					<td class="m">La línea dorada<br>salta</td>
+					<td>Cambió el giro protegido: empezó un impulso nuevo, así que ahora define la
+					tendencia un mínimo más reciente. La tendencia acaba de ganar margen, o de perderlo.</td>
 				</tr>
 				<tr>
-					<td class="m">Price closes<br>through the gold line</td>
-					<td>The banner turns amber and reads <b>break</b>, naming the bar and the level. This
-					needs no pivot and no waiting; it is the fastest reading on the page.</td>
+					<td class="m">El precio cierra<br>cruzando la dorada</td>
+					<td>La banda se pone ámbar y dice <b>break</b>, nombrando la barra y el nivel. No
+					necesita pivote ni espera: es la lectura más rápida de la página.</td>
 				</tr>
 				<tr>
-					<td class="m">The banner reads<br><b>weakening</b></td>
-					<td>The trend is intact but the pushes are shrinking or the pullbacks deepening. The
-					reason line says which, with the two sizes in ATRs so you can judge the call yourself.</td>
+					<td class="m">La banda dice<br><b>weakening</b></td>
+					<td>La tendencia sigue intacta pero los impulsos se acortan o los retrocesos se hacen
+					más profundos. La razón dice cuál de las dos, con los dos tamaños en ATR para que
+					juzgues tú mismo.</td>
 				</tr>
 				<tr>
-					<td class="m">Swing names change<br>on old dots</td>
-					<td>A pivot was withdrawn or a new one appeared behind the edge, and the chain was
-					re-read. Normal near the right edge; if it happens deep in the history, the tolerance
-					is set too fine for these bars.</td>
+					<td class="m">Cambian los nombres<br>de giros antiguos</td>
+					<td>Se retiró un pivote o apareció otro detrás del borde, y la cadena se releyó. Es
+					normal cerca del borde derecho; si pasa en mitad de la historia, la tolerancia está
+					demasiado fina para estas barras.</td>
 				</tr>
 			</tbody>
 		</table>
 	</div>
 
-	<h3>The drill</h3>
-	<p>Set the reveal to zero, press <span class="key">random</span>, and say out loud what the state is
-	and what you expect next. <em>Then</em> raise the reveal slider and see. The banner tells you what
-	the rules said; the grey path tells you what the market did. Those are two different questions, and
-	getting them confused is the main way people learn the wrong lesson from a chart.</p>
+	<h3>El ejercicio</h3>
+	<p>Pon el revelado a cero, pulsa <span class="key">random</span>, y di en voz alta cuál es el estado
+	y qué esperas a continuación. <em>Después</em> sube el deslizador de revelado y mira. La banda te
+	dice lo que dijeron las reglas; el trazo gris te dice lo que hizo el mercado. Son dos preguntas
+	distintas, y confundirlas es la forma habitual de aprender la lección equivocada de un gráfico.</p>
 
 	<div class="callout">
-		<span class="tag">When you disagree</span>
-		<p>You will, and often you will be right. The tagger has no memory, no context and no view on
-		the session; it reads four swings and a close. A disagreement is a rule worth changing &mdash;
-		note the bar number, because that list is the backlog for the next version.</p>
+		<span class="tag">Cuando no estés de acuerdo</span>
+		<p>Va a pasar, y muchas veces tendrás razón tú. El clasificador no tiene memoria, ni contexto, ni
+		opinión sobre la sesión: lee cuatro giros y un cierre. Cada desacuerdo es una regla que merece
+		cambiarse &mdash; apunta el número de barra, porque esa lista es la agenda de la próxima
+		versión.</p>
 	</div>
 </section>
 
 <!-- ============================================================ 07 -->
 <section id="numbers">
-	<h2><span class="num">07</span> The numbers</h2>
-	<p class="lede">The row under the chart is the state of play in five figures.</p>
+	<h2><span class="num">07</span> Los números</h2>
+	<p class="lede">La fila bajo el gráfico es el estado de la partida en cinco cifras.</p>
 
 	<dl class="terms">
 		<div>
-			<dt>Time</dt>
-			<dd>The close time of the bar you are standing on. Worth watching for the session boundary
-			&mdash; a straight line fitted across the overnight gap is not a leg.</dd>
+			<dt>Time<small>hora</small></dt>
+			<dd>La hora de cierre de la barra en la que estás. Vigila el cambio de sesión: una recta
+			ajustada sobre el hueco nocturno no es un tramo.</dd>
 		</div>
 		<div>
-			<dt>Turns known</dt>
-			<dd>Confirmed pivots in the window. Very few means the tolerance is coarse or the market has
-			been straight; very many means it is fine or the market has been noisy.</dd>
+			<dt>Turns known<small>giros conocidos</small></dt>
+			<dd>Pivotes confirmados en la ventana. Muy pocos significa tolerancia gruesa o mercado recto;
+			muchísimos, tolerancia fina o mercado ruidoso.</dd>
 		</div>
 		<div>
-			<dt>Leg in progress</dt>
-			<dd>How long the unconfirmed leg has run, and how far in ticks. Compare it with the typical
-			leg: a leg already twice the median is late to be joining.</dd>
+			<dt>Leg in progress<small>tramo en curso</small></dt>
+			<dd>Cuánto lleva corriendo el tramo sin confirmar, y cuántos ticks. Compáralo con el tramo
+			típico: uno que ya dobla la mediana llega tarde para subirse.</dd>
 		</div>
 		<div>
 			<dt>Newest turn<small>seen N bars late</small></dt>
-			<dd>How long ago the last confirmed turn happened, and <b>how late you learnt it</b>. That
-			second number is the confirmation lag made concrete, bar by bar.</dd>
+			<dd>Hace cuánto ocurrió el último giro confirmado y, debajo, <b>con cuánto retraso te
+			enteraste</b>. Ese segundo número es el retraso de confirmación hecho carne, barra a barra.</dd>
 		</div>
 		<div>
 			<dt>ATR</dt>
-			<dd>The average bar, in ticks. Every threshold on the page is a multiple of this.</dd>
+			<dd>La barra media, en ticks. Todos los umbrales de la página son múltiplos de esto.</dd>
 		</div>
 	</dl>
 
-	<p>Below that, <em>What this dataset costs you in lag</em> does the division that matters: how far
-	into the following leg a turn becomes trustworthy. Under a third is room to work with. Over a half
-	means the read arrives after the move, and no rule written on top can give that back &mdash; the
-	answer then is a coarser tolerance or a slower timeframe, not a cleverer rule.</p>
+	<p>Más abajo, <em>What this dataset costs you in lag</em> hace la división que importa: qué parte
+	del tramo siguiente ya ha transcurrido cuando el giro pasa a ser fiable. Por debajo de un tercio hay
+	margen para trabajar. Por encima de la mitad, la lectura llega después del movimiento, y ninguna
+	regla escrita encima lo devuelve &mdash; la respuesta entonces es una tolerancia más gruesa o una
+	temporalidad más lenta, no una regla más lista.</p>
 </section>
 
 <!-- ============================================================ 08 -->
 <section id="knobs">
-	<h2><span class="num">08</span> The knobs</h2>
-	<p class="lede">The sidebar splits in two: what gets cut, and what gets judged. Changing the first
-	re-reads the market; changing the second re-reads the cut.</p>
+	<h2><span class="num">08</span> Los mandos</h2>
+	<p class="lede">La barra lateral se parte en dos: qué se corta, y cómo se juzga. Cambiar lo primero
+	relee el mercado; cambiar lo segundo relee el corte.</p>
 
-	<h3>The cut</h3>
+	<h3>El corte</h3>
 	<dl class="terms">
 		<div>
-			<dt>Tolerance<small>in ATRs</small></dt>
-			<dd>How far a bar may stray from the line drawn over it. <b>The level of detail, and the only
-			knob that really matters.</b> Under 0.3 keeps every swing; 0.75 to 1.5 draws the legs a person
-			would draw; over 3 gives the session in a few strokes.</dd>
+			<dt>Tolerance<small>en ATR</small></dt>
+			<dd>Cuánto puede alejarse una barra de la recta dibujada sobre ella. <b>Es el nivel de
+			detalle, y el único mando que de verdad importa.</b> Por debajo de 0,3 conserva cada
+			vaivén; entre 0,75 y 1,5 dibuja los tramos que trazaría una persona; por encima de 3, la
+			sesión en cuatro trazos.</dd>
 		</div>
 		<div>
-			<dt>Method</dt>
-			<dd>Bottom up gives the cleanest shapes. Sliding window is rougher and is the only one that
-			could run live &mdash; comparing the two is how you find out what that difference costs.</dd>
+			<dt>Method<small>método</small></dt>
+			<dd><code>BottomUp</code> da las formas más limpias. <code>SlidingWindow</code> es más basto y
+			es el único que podría correr en vivo &mdash; comparar los dos es como averiguas lo que cuesta
+			esa diferencia.</dd>
 		</div>
 		<div>
-			<dt>Minimum length</dt>
-			<dd>The shortest leg allowed, so a single spike cannot become a leg of its own.</dd>
+			<dt>Minimum length<small>longitud mínima</small></dt>
+			<dd>El tramo más corto permitido, para que un pico suelto no se convierta en un tramo propio.</dd>
 		</div>
 		<div>
-			<dt>Window</dt>
-			<dd>How many bars each re-fit looks back over. Longer is steadier and slower.</dd>
+			<dt>Window<small>ventana</small></dt>
+			<dd>Cuántas barras mira hacia atrás cada reajuste. Más larga, más estable y más lenta.</dd>
 		</div>
 	</dl>
 
-	<h3>The rules</h3>
+	<h3>Las reglas</h3>
 	<dl class="terms">
 		<div>
-			<dt>Same level within</dt>
-			<dd>The noise band for calling two swings equal. Raise it and marginal higher highs become
-			double tops, and trends become ranges.</dd>
+			<dt>Same level within<small>mismo nivel dentro de</small></dt>
+			<dd>La banda de ruido para dar dos giros por iguales. Súbela y los máximos crecientes
+			ajustados pasan a ser dobles techos, y las tendencias, rangos.</dd>
 		</div>
 		<div>
-			<dt>Break clears by</dt>
-			<dd>How far past the protective level a close must settle. Raise it to ignore pokes; raise it
-			too far and the break arrives after the reversal.</dd>
+			<dt>Break clears by<small>la ruptura despeja</small></dt>
+			<dd>Cuánto debe alejarse el cierre del nivel protector. Súbela para ignorar pinchazos; si la
+			subes demasiado, la ruptura llega después de la vuelta.</dd>
 		</div>
 		<div>
-			<dt>Push shrunk to</dt>
-			<dd>Below this fraction of the previous push, the trend is called weakening.</dd>
+			<dt>Push shrunk to<small>impulso reducido a</small></dt>
+			<dd>Por debajo de esta fracción del impulso anterior, la tendencia se declara debilitándose.</dd>
 		</div>
 		<div>
-			<dt>Pullback gave back</dt>
-			<dd>Above this fraction of the push it retraced, likewise.</dd>
+			<dt>Pullback gave back<small>el retroceso devolvió</small></dt>
+			<dd>Por encima de esta fracción del impulso que corrige, lo mismo.</dd>
 		</div>
 	</dl>
 
 	<div class="callout">
-		<span class="tag">Defaults are a starting point</span>
-		<p>Every one of these was chosen by argument, not by fitting. They should be argued with against
-		a long export &mdash; weeks, not days. A few days of one instrument cannot justify a threshold,
-		and tuning on it is how you end up with rules that describe last Tuesday.</p>
+		<span class="tag">Los valores por defecto son un punto de partida</span>
+		<p>Todos se eligieron por argumento, no por ajuste. Hay que discutirlos contra una exportación
+		larga &mdash; semanas, no días. Unos pocos días de un instrumento no pueden justificar un umbral,
+		y afinarlo ahí es la forma de acabar con reglas que describen el martes pasado.</p>
 	</div>
 </section>
 
 <!-- ============================================================ 09 -->
 <section id="traps">
-	<h2><span class="num">09</span> Three traps</h2>
+	<h2><span class="num">09</span> Tres trampas</h2>
 
-	<h3>The right edge argues with itself</h3>
-	<p>The newest leg is provisional and the newest turn can be withdrawn. That is not a bug in the
-	drawing; it is the honest shape of the problem. What settles behind it stays put, and the number
-	that says how long settling takes is the confirmation lag.</p>
+	<h3>El borde derecho discute consigo mismo</h3>
+	<p>El tramo más nuevo es provisional y el giro más reciente puede retirarse. No es un fallo del
+	dibujo: es la forma honesta del problema. Lo que queda detrás se asienta y ya no se mueve, y el
+	número que dice cuánto tarda en asentarse es el retraso de confirmación.</p>
 
-	<h3>The lag is never zero</h3>
-	<p>A turn at bar 1000 that is confirmed at 1003 was invisible for three bars. If the median leg runs
-	six bars, half the move is gone before the turn that started it can be read. Every rule you write
-	inherits that, and it is the first thing to measure on any new timeframe.</p>
+	<h3>El retraso nunca es cero</h3>
+	<p>Un giro en la barra 1000 confirmado en la 1003 estuvo invisible tres barras. Si el tramo mediano
+	dura seis, la mitad del movimiento se ha ido antes de que el giro que lo empezó pueda leerse. Toda
+	regla que escribas lo hereda, y es lo primero que hay que medir en cada temporalidad nueva.</p>
 
-	<h3>The tagger is a ruler, not an oracle</h3>
-	<p>It reads four swings and a close. It has no idea it is ten minutes before the cash open, that the
-	last three days were a range, or that the move it is calling an uptrend is a single bar's news
-	spike. It is consistent, explainable and fast &mdash; which is exactly what makes it useful as a
-	training partner and useless as an authority.</p>
+	<h3>El clasificador es una regla de medir, no un oráculo</h3>
+	<p>Lee cuatro giros y un cierre. No sabe que faltan diez minutos para la apertura del contado, que
+	los últimos tres días fueron un rango, ni que el movimiento que llama tendencia es el pico de una
+	noticia en una sola barra. Es consistente, explicable y rápido &mdash; justo lo que lo hace útil
+	como compañero de entrenamiento e inútil como autoridad.</p>
 </section>
 
 </main>
 
 <footer>
-	Segment strategy &middot; reading the structure &middot; companion to <code>viewer.py</code> and
-	<code>segments/tagger.py</code>. Rules and thresholds: <code>tagger.Rules</code>. &middot;
-	<a href="reading-the-chart.es.html">Versión en español</a>
+	Segment strategy &middot; leer la estructura &middot; complemento de <code>viewer.py</code> y
+	<code>segments/tagger.py</code>. Reglas y umbrales: <code>tagger.Rules</code>. &middot;
+	<a href="reading-the-chart.html">English version</a>
 </footer>
 
 </div>
