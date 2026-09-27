@@ -30,6 +30,13 @@ python -m segments refit  <stem> --tolerance 0.5      # re-cut, no re-export
 Every command takes either CSV of an export, their shared stem, or a folder
 holding exactly one export.
 
+## Learning to read it
+
+[doc/reading-the-chart.html](doc/reading-the-chart.html) — the tutorial. Every
+mark on the viewer page, the vocabulary the tagger argues in (HH, HL, push,
+pullback, weakening, break of structure), the six states with the rule behind
+each, and what the protective level means. Open it beside the viewer.
+
 ## The tagger
 
 The first thing here with an opinion. It reads the confirmed pivots at a bar,
