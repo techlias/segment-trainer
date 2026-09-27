@@ -111,6 +111,50 @@ class Dataset:
 
         return SOURCE_PRICE[self.meta.source](self.bars)
 
+    def header(self) -> str:
+        """The ``#`` line this dataset would be written with."""
+        fields = {
+            **self.meta.raw,
+            "instrument": self.meta.instrument,
+            "period": self.meta.period,
+            "session": self.meta.session,
+            "method": self.meta.method,
+            "source": self.meta.source,
+            "ticksize": self.meta.ticksize,
+            "tolerance": self.meta.tolerance,
+            "minbars": self.meta.minbars,
+            "window": self.meta.window,
+            "atr": self.meta.atr,
+            "exported": self.meta.exported,
+        }
+
+        return "# " + json.dumps(fields)
+
+    def write(self, stem: str | Path) -> Path:
+        """Writes the pair of CSVs a loader would read back unchanged.
+
+        The format is the exporter's, to the column, so a dataset re-cut in
+        Python is interchangeable with one NinjaTrader wrote - the game, the
+        report and the plots cannot tell them apart, and should not be able to.
+        """
+        stem = Path(stem)
+        stem.parent.mkdir(parents=True, exist_ok=True)
+
+        header = self.header()
+
+        bars = self.bars.reset_index()[BAR_COLUMNS].copy()
+        bars["time"] = pd.to_datetime(bars["time"]).dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+        for path, frame in (
+            (Path(str(stem) + "-bars.csv"), bars),
+            (Path(str(stem) + "-pivots.csv"), self.events[EVENT_COLUMNS]),
+        ):
+            with path.open("w", encoding="utf-8", newline="\n") as handle:
+                handle.write(header + "\n")
+                frame.to_csv(handle, index=False, lineterminator="\n")
+
+        return Path(str(stem) + "-bars.csv")
+
     def check(self) -> list[str]:
         """Everything wrong with this pair of files, as a list of complaints.
 

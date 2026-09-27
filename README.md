@@ -23,6 +23,8 @@ python -m segments list   "~/Documents/NinjaTrader 8/segment-export"
 python -m segments report "~/Documents/NinjaTrader 8/segment-export/MNQ_12-26-15Minute-BottomUp-Median-t1-m3-w250"
 python -m segments plot   <stem> --bar 4000 --history 150 --reveal 30 --bars
 python -m segments sheet  <stem> --count 8
+python -m segments verify <stem>                      # does the port agree with the C#?
+python -m segments refit  <stem> --tolerance 0.5      # re-cut, no re-export
 ```
 
 Every command takes either CSV of an export, their shared stem, or a folder
@@ -56,8 +58,9 @@ belongs in a report, never in a feature.
 |---|---|
 | `dataset.py` | loads both CSVs and the JSON header; `check()` refuses files that cannot mean what they claim |
 | `replay.py` | the causal reconstruction, plus the lag and leg measurements |
+| `fit.py` | the port of `SegmentFit.cs`: the three methods, the causal sweep, `refit` and `verify` |
 | `plot.py` | a static picture of one bar's view, and a contact sheet of several |
-| `__main__.py` | `report`, `plot`, `sheet`, `list` |
+| `__main__.py` | `report`, `plot`, `sheet`, `verify`, `refit`, `list` |
 
 ## Reading the report
 
@@ -71,6 +74,49 @@ the rules.
 happen: two files from different runs left in the same folder (caught by
 comparing each pivot price against its own bar's source price), an export
 interrupted so the bars stop before the events do, and a hand-edited CSV.
+
+## Re-cutting without re-exporting
+
+`fit.py` is the port of `SegmentFit.cs`, so the bars alone are enough to try
+another tolerance:
+
+```python
+from segments import load, fit
+data = load(stem)
+finer = fit.refit(data, tolerance=0.4)      # a Dataset like any other
+rougher = fit.refit(data, method="SlidingWindow")
+```
+
+A refit dataset is written in the exporter's own format, so nothing downstream
+can tell it from one NinjaTrader produced — and should not be able to.
+
+**`verify` is what makes the port trustworthy.** It re-cuts an export's own bars
+with that export's own settings and diffs the events against the ones
+NinjaTrader wrote. Empty means the two implementations agree bar for bar; run it
+once per new export, before trusting anything measured here. Events are compared
+as a set per bar, since the exporter iterates a HashSet and the order within one
+bar is arbitrary — it never changes what the replay ends up holding.
+
+Cost: about 7 ms a bar, so a 10,000 bar history re-cuts in around a minute.
+
+### What to watch for
+
+On a synthetic path, the three methods churn wildly differently under re-fitting
+— events per bar, and the median bars to settle:
+
+| method | events/bar | settles after |
+|---|---|---|
+| BottomUp | 13.6 | 99 bars |
+| SlidingWindow | 1.5 | 3 bars |
+| DouglasPeucker | 0.6 | 24 bars |
+
+That is synthetic noise, not MNQ, so take the numbers as a demonstration of what
+`report` measures rather than as a result. But the mechanism is real: bottom-up
+merges cascade, so one new bar can rewrite vertices well back into the window,
+and the cleanest picture is also the least stable one. Measure it on your own
+export before choosing a method for the tagger — and if the lag is large, a
+pivot that must survive *k* bars before it counts may be worth more than a
+tighter tolerance.
 
 ## Checking it against NinjaTrader
 
@@ -89,6 +135,6 @@ Two things will differ legitimately, and knowing which is which saves an hour:
 
 ## Next
 
-A Python port of `SegmentFit` (`fit.py`), so tolerance and method can be
-re-tuned here instead of by re-exporting. Then the tagger, which is the first
-thing that has an opinion rather than a measurement.
+The tagger — the first thing here that has an opinion rather than a measurement.
+It reads `replay.walk`, only confirmed pivots, and labels every bar with a
+reason. See [BRIEF.md](BRIEF.md) step 2.

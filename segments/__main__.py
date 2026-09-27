@@ -4,6 +4,8 @@
     python -m segments plot    <stem> --bar 4000 --history 150 --reveal 30
     python -m segments sheet   <stem> --count 8
     python -m segments list    <folder>
+    python -m segments verify  <stem>
+    python -m segments refit   <stem> --tolerance 0.5 --out <folder>
 
 Every command takes either file of an export, their shared stem, or a folder
 holding exactly one export.
@@ -19,7 +21,7 @@ from pathlib import Path
 import pandas as pd
 
 from . import dataset as dataset_module
-from . import plot, replay
+from . import fit, plot, replay
 
 
 def _resolve(target: str) -> Path:
@@ -127,6 +129,73 @@ def sheet(args) -> None:
     print(f"{out}  bars {bars}")
 
 
+def verify(args) -> None:
+    data = _load(args.target)
+    diff = fit.verify(data)
+
+    if diff.empty:
+        print(f"the port agrees with NinjaTrader: {len(data.events)} events, none in dispute")
+        return
+
+    theirs = int((diff["side"] == "export").sum())
+    mine = int((diff["side"] == "python").sum())
+
+    print(f"DISAGREEMENT: {theirs} events only NinjaTrader produced, {mine} only Python did")
+    print(f"out of {len(data.events)} exported")
+    print()
+    print(diff.head(20).to_string(index=False))
+
+    if len(diff) > 20:
+        print(f"... and {len(diff) - 20} more")
+
+    print()
+    print("The first bar listed is where to look: put that bar on the chart with")
+    print("PriceSegments at the same settings and see which of the two is right.")
+
+    raise SystemExit(1)
+
+
+def _stem(meta) -> str:
+    """The exporter's own naming, so a re-cut file sits beside the original and
+    says what it is."""
+    name = (
+        f"{meta.instrument}-{meta.period}-{meta.method}-{meta.source}"
+        f"-t{meta.tolerance:g}-m{meta.minbars}-w{meta.window}"
+    )
+
+    for bad in '<>:"/\|?*':
+        name = name.replace(bad, "_")
+
+    return name.replace(" ", "_")
+
+
+def refit(args) -> None:
+    data = _load(args.target)
+
+    cut = fit.refit(
+        data,
+        method=args.method,
+        source=args.source,
+        tolerance=args.tolerance,
+        min_bars=args.min_bars,
+        window=args.window,
+        atr_period=args.atr_period,
+    )
+
+    folder = Path(args.out) if args.out else Path(data.path)
+    written = cut.write(folder / _stem(cut.meta))
+
+    churn = len(cut.events) / max(len(cut.bars), 1)
+    print(f"{written}")
+    print(f"{cut.meta}")
+    print(f"{len(cut.events)} events over {len(cut.bars)} bars ({churn:.2f} per bar)")
+
+    summary = replay.lag_summary(cut)
+    if not summary.empty:
+        print(f"settled after {summary['lag_median']:.0f} bars (median), "
+              f"{summary['pivots']:.0f} pivots stuck, {summary['withdrawn']:.0f} withdrawn")
+
+
 def list_exports(args) -> None:
     found = dataset_module.find(args.folder)
     if not found:
@@ -168,6 +237,20 @@ def main(argv: list[str] | None = None) -> int:
     many.add_argument("--seed", type=int, default=0)
     many.add_argument("--out", default=None)
     many.set_defaults(run=sheet)
+
+    checked = shared(commands.add_parser("verify", help="re-cut the bars in Python and diff against the export"))
+    checked.set_defaults(run=verify)
+
+    cut = shared(commands.add_parser("refit", help="re-cut the same bars at other settings, as a new export"))
+    cut.add_argument("--method", default=None, choices=list(fit.METHODS))
+    cut.add_argument("--source", default=None, choices=["Close", "BodyCentre", "Median", "Typical"])
+    cut.add_argument("--tolerance", type=float, default=None, help="in ATRs - the level of detail")
+    cut.add_argument("--min-bars", type=int, default=None, dest="min_bars")
+    cut.add_argument("--window", type=int, default=None)
+    cut.add_argument("--atr-period", type=int, default=None, dest="atr_period",
+                     help="recompute the ATR, only correct if the export starts at bar 0")
+    cut.add_argument("--out", default=None, help="folder for the new pair (default: beside the original)")
+    cut.set_defaults(run=refit)
 
     listed = commands.add_parser("list", help="every export in a folder")
     listed.add_argument("folder")
