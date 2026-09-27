@@ -23,12 +23,12 @@ from segments import dataset as dataset_module
 from segments import fit, replay
 
 
-def bottom_up_by_rescan(price, scale, tolerance, min_bars):
+def bottom_up_by_rescan(price, scale, tolerance, min_bars, phase=0):
     """SegmentFit.cs BottomUp, transcribed line for line, costs rescanned every
     round. The reference the cached version has to match."""
     n = len(price)
 
-    pivot = list(range(0, n, 2))
+    pivot = [0] + list(range(2 if phase == 0 else 1, n, 2))
     if pivot[-1] != n - 1:
         pivot.append(n - 1)
 
@@ -76,11 +76,40 @@ def walk_prices(seed, n=260):
 
 @pytest.mark.parametrize("seed", range(6))
 @pytest.mark.parametrize("tolerance", [0.3, 1.0, 2.5])
-def test_the_cache_picks_the_same_merges_as_a_full_rescan(seed, tolerance):
+@pytest.mark.parametrize("phase", [0, 1])
+def test_the_cache_picks_the_same_merges_as_a_full_rescan(seed, tolerance, phase):
     price = walk_prices(seed)
     scale = np.full(len(price), 6.0)
 
-    assert fit.bottom_up(price, scale, tolerance, 3) == bottom_up_by_rescan(price, scale, tolerance, 3)
+    assert (fit.bottom_up(price, scale, tolerance, 3, phase)
+            == bottom_up_by_rescan(price, scale, tolerance, 3, phase))
+
+
+def test_a_sliding_window_keeps_the_pivots_it_already_found():
+    """The one that matters. Slide the window a bar at a time and the fit has to
+    be recognisably the same fit - if it is not, every lag measured downstream is
+    measuring the algorithm rather than the market.
+
+    Anchoring the pairs to the window instead of to the bar numbers scored 0.00
+    here on real MNQ: consecutive bars sharing not one pivot.
+    """
+    price = walk_prices(21, n=700)
+    scale = np.full(len(price), 6.0)
+    window = 250
+
+    def pivots(end):
+        start = end - window + 1
+        cut = fit.segment(price[start : end + 1], scale[start : end + 1], 1.0, 3, "BottomUp", start % 2)
+        return {start + i for i in cut[1:-1]}
+
+    previous, scores = None, []
+    for end in range(400, 460):
+        current = pivots(end)
+        if previous is not None:
+            scores.append(len(previous & current) / max(len(previous | current), 1))
+        previous = current
+
+    assert np.mean(scores) > 0.9
 
 
 @pytest.mark.parametrize("method", fit.METHODS)
@@ -210,7 +239,7 @@ def test_replaying_the_log_gives_back_the_fit_of_that_bar(data):
 
     for bar in (150, 233, 300, 399):
         start = max(0, bar - 120 + 1)
-        pivots = fit.segment(price[start : bar + 1], scale[start : bar + 1], 1.0, 3, "BottomUp")
+        pivots = fit.segment(price[start : bar + 1], scale[start : bar + 1], 1.0, 3, "BottomUp", start % 2)
         expected = {start + i for i in pivots[1:-1]}
 
         assert {pivot.bar for pivot in replay.at(data, bar).pivots()} == expected

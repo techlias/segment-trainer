@@ -81,13 +81,24 @@ def error(price: np.ndarray, scale: np.ndarray, a: int, b: int, margin: int = 0)
     return worst / average, at
 
 
-def bottom_up(price: np.ndarray, scale: np.ndarray, tolerance: float, min_bars: int) -> list[int]:
+def bottom_up(price: np.ndarray, scale: np.ndarray, tolerance: float, min_bars: int,
+              phase: int = 0) -> list[int]:
     """A piece per pair of bars, then merge the cheapest neighbouring pair until
     the cheapest one left would break the tolerance.
 
     Pieces shorter than ``min_bars`` are merged first and whatever they cost,
     since the alternative is a one bar stub; among those the cheapest still goes
     first.
+
+    ``phase`` is the parity of the window's oldest BAR NUMBER, and the pairs are
+    laid out from there rather than from the start of the window. It looks like a
+    detail and it decides whether the output means anything: a window that slides
+    forward one bar re-pairs every bar inside it if the pairs start where the
+    window starts, the cascade of merges begins somewhere else, and it ends
+    somewhere else. On 3 minute MNQ the pivot sets of consecutive bars then had
+    nothing whatever in common - the fit alternating between two disjoint
+    answers, one per parity. Anchored to the bar numbers, 98% of the pivots
+    survive from one bar to the next.
 
     ``costs[i]`` is what merging the piece at ``i`` with the one after it would
     cost, which is the same thing as dropping the pivot between them. A merge
@@ -96,7 +107,7 @@ def bottom_up(price: np.ndarray, scale: np.ndarray, tolerance: float, min_bars: 
     """
     n = len(price)
 
-    pivot = list(range(0, n, 2))
+    pivot = [0] + list(range(2 if phase == 0 else 1, n, 2))
     if pivot[-1] != n - 1:
         pivot.append(n - 1)
 
@@ -194,11 +205,16 @@ def segment(
     tolerance: float,
     min_bars: int,
     method: str = "BottomUp",
+    phase: int = 0,
 ) -> list[int]:
     """Cuts one window into straight pieces, as indices into ``price``.
 
     The first index is always 0 and the last always ``len(price) - 1``: those two
     are where the window was cut, not turns, and the exporter never logs them.
+
+    ``phase`` is the parity of the window's oldest bar number, and only bottom up
+    uses it - see :func:`bottom_up`. A sweep that slides the window has to pass
+    it or the answers will not be comparable from one bar to the next.
     """
     price = np.asarray(price, dtype=float)
     scale = np.asarray(scale, dtype=float)
@@ -211,7 +227,7 @@ def segment(
     if method == "SlidingWindow":
         return sliding_window(price, scale, tolerance, min_bars)
     if method == "BottomUp":
-        return bottom_up(price, scale, tolerance, min_bars)
+        return bottom_up(price, scale, tolerance, min_bars, phase)
 
     raise ValueError(f"unknown method {method!r}, expected one of {METHODS}")
 
@@ -280,7 +296,12 @@ def events(
             continue
 
         start = position - n + 1
-        pivots = segment(price[start : position + 1], scale[start : position + 1], tolerance, min_bars, method)
+        oldest = int(index[start])
+
+        pivots = segment(
+            price[start : position + 1], scale[start : position + 1],
+            tolerance, min_bars, method, oldest % 2,
+        )
 
         at_bar = int(index[position])
         found = {int(index[start + i]): float(price[start + i]) for i in pivots[1:-1]}
@@ -289,7 +310,6 @@ def events(
             if bar not in held:
                 rows.append((at_bar, "+", bar, found[bar]))
 
-        oldest = int(index[start])
         for bar in sorted(held):
             # A pivot that has left the window is frozen, not withdrawn: it
             # stopped being re-examined, which is not the same as being taken
