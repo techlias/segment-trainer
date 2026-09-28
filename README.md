@@ -30,6 +30,13 @@ python -m segments refit  <stem> --tolerance 0.5      # re-cut, no re-export
 Every command takes either CSV of an export, their shared stem, or a folder
 holding exactly one export.
 
+## Running it somewhere else
+
+[DEPLOY.md](DEPLOY.md) — Streamlit Community Cloud, free, from a private repo,
+with the app locked to an email allow-list. The sidebar takes an uploaded pair
+of CSVs, so a deployed copy can open an export from any machine without a
+redeploy.
+
 ## Learning to read it
 
 [doc/reading-the-chart.html](doc/reading-the-chart.html) — the tutorial

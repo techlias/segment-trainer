@@ -8,11 +8,13 @@ build/
 dist/
 
 # --- The data itself ---
-# Exports are large, reproducible from NinjaTrader, and instrument-specific.
-# What goes in the repo is the code that reads them.
-data/
+# Exports are reproducible from NinjaTrader and instrument-specific, so as a
+# rule they stay out. The exception is data/, which carries one small export so
+# the deployed app has something to open before anyone uploads anything.
 *-bars.csv
 *-pivots.csv
+!data/*-bars.csv
+!data/*-pivots.csv
 
 # --- Output ---
 segments-*.png

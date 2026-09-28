@@ -1,0 +1,19 @@
+# Community Cloud reads this from the repository. Local runs pick it up too
+# when streamlit is started from this folder.
+
+[server]
+# The uploader takes a pair of CSVs. An export of a long history is a few
+# megabytes; the default cap of 200 is far more than needed and a smaller one
+# fails faster when someone drops the wrong file in.
+maxUploadSize = 50
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base = "light"
+primaryColor = "#9A5A11"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F1F4F5"
+textColor = "#12171A"
+font = "sans serif"

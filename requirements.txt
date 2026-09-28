@@ -1,0 +1,7 @@
+# What Streamlit Community Cloud installs. Kept deliberately loose: the app
+# uses nothing recent from any of them, and pinning hard is how a deployment
+# starts failing on a platform upgrade nobody told you about.
+streamlit>=1.40
+pandas>=2.0
+numpy>=1.24
+matplotlib>=3.7

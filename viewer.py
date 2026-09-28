@@ -24,6 +24,7 @@ THE REVEAL
 from __future__ import annotations
 
 import random
+import tempfile
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -32,7 +33,17 @@ import streamlit as st
 from segments import dataset as dataset_module
 from segments import fit, plot, replay, tagger
 
-DEFAULT_FOLDER = Path.home() / "OneDrive" / "Documentos" / "NinjaTrader 8" / "segment-export"
+HERE = Path(__file__).parent
+
+#: Where to look, in order. The folder beside the app comes first so the
+#: deployed copy works with nothing configured; the NinjaTrader folder is for
+#: running this on the machine that does the exporting. Neither has to exist -
+#: an upload works on its own.
+FOLDERS = [
+    HERE / "data",
+    Path.home() / "OneDrive" / "Documentos" / "NinjaTrader 8" / "segment-export",
+    Path.home() / "Documents" / "NinjaTrader 8" / "segment-export",
+]
 
 
 st.set_page_config(page_title="Segments", layout="wide")
@@ -52,15 +63,56 @@ def recut(stem: str, method: str, source: str, tolerance: float, min_bars: int, 
     )
 
 
-def pick_dataset() -> tuple[str, object] | tuple[None, None]:
-    folder = st.sidebar.text_input("Export folder", str(DEFAULT_FOLDER))
-    stems = dataset_module.find(folder) if Path(folder).is_dir() else []
+def stash(files) -> str | None:
+    """Saves an uploaded pair of CSVs and returns their stem.
 
-    if not stems:
-        st.sidebar.error("No exports here - looked for *-bars.csv")
+    The whole point of the uploader is that the deployed app is not on the
+    machine that does the exporting. Drop the two files SegmentExport wrote and
+    they are read exactly as a local pair would be - no redeploy, and nothing
+    kept after the session.
+    """
+    if not files:
+        return None
+
+    folder = Path(tempfile.gettempdir()) / "segments-upload"
+    folder.mkdir(parents=True, exist_ok=True)
+
+    stems: set[str] = set()
+    for one in files:
+        (folder / one.name).write_bytes(one.getbuffer())
+        for suffix in ("-bars.csv", "-pivots.csv"):
+            if one.name.endswith(suffix):
+                stems.add(one.name[: -len(suffix)])
+
+    for stem in sorted(stems):
+        pair = [folder / (stem + suffix) for suffix in ("-bars.csv", "-pivots.csv")]
+        if all(path.exists() for path in pair):
+            return str(folder / stem)
+
+    st.sidebar.error("Upload BOTH files of an export - the -bars.csv and the -pivots.csv")
+    return None
+
+
+def pick_dataset() -> tuple[str, object] | tuple[None, None]:
+    found: list[Path] = []
+    for folder in FOLDERS:
+        if folder.is_dir():
+            found += dataset_module.find(folder)
+
+    uploaded = stash(
+        st.sidebar.file_uploader(
+            "Upload an export", type="csv", accept_multiple_files=True,
+            help="Both CSVs SegmentExport wrote. Use this when the app is not on the machine that exports.",
+        )
+    )
+
+    if uploaded:
+        return uploaded, load(uploaded)
+
+    if not found:
         return None, None
 
-    chosen = st.sidebar.selectbox("Dataset", stems, format_func=lambda path: path.name)
+    chosen = st.sidebar.selectbox("Dataset", found, format_func=lambda path: path.name)
 
     return str(chosen), load(str(chosen))
 
@@ -70,8 +122,9 @@ stem, original = pick_dataset()
 if original is None:
     st.title("Segments")
     st.info(
-        "Drop **SegmentExport** on a chart in NinjaTrader, let it run through the "
-        "history, then point the sidebar at the folder it wrote into."
+        "No export found. Drop **SegmentExport** on a chart in NinjaTrader, let it run "
+        "through the history, then upload the two CSVs it wrote using the sidebar - "
+        "or put them in the `data` folder beside this app."
     )
     st.stop()
 
