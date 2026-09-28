@@ -90,6 +90,11 @@ being copied anywhere.
 
 - **`ModuleNotFoundError`** — `requirements.txt` is at the repo root and must
   name the package. Check the build log, not the app.
+- **Nothing installs, or the wrong things do** — both `requirements.txt` and
+  `pyproject.toml` sit at the root. Community Cloud should use the first, since
+  the second has no `[tool.poetry]` section and is only there for `pip install
+  -e .` locally. If a build ever proves otherwise, delete `pyproject.toml` from
+  this repo — it belongs to the main one.
 - **The repo is not listed** — the private-repository scope was not granted.
   Revoke Streamlit under GitHub → Settings → Applications and sign in again.
 - **The app opens with "No export found"** — `data/` did not make it into the
