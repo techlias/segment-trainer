@@ -40,7 +40,9 @@ redeploy.
 ## Learning to read it
 
 [doc/reading-the-chart.html](doc/reading-the-chart.html) — the tutorial
-([versión en español](doc/reading-the-chart.es.html)). Every
+([versión en español](doc/reading-the-chart.es.html)), also served inside the
+app under **Tutorial** in the page nav, so a deployed copy carries its own
+instructions. Every
 mark on the viewer page, the vocabulary the tagger argues in (HH, HL, push,
 pullback, weakening, break of structure), the six states with the rule behind
 each, and what the protective level means. Open it beside the viewer.

@@ -159,6 +159,8 @@ data = original if untouched else recut(stem, method, source, tolerance, min_bar
 
 # --- what to show ------------------------------------------------------------
 
+st.sidebar.page_link("pages/1_Tutorial.py", label="How to read this page", icon=":material/help:")
+
 st.sidebar.subheader("The view")
 history = st.sidebar.slider("History (bars)", 40, 400, 150, 10)
 reveal = st.sidebar.slider("Reveal (bars)", 0, 120, 0, 5,
