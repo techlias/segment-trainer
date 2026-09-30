@@ -167,8 +167,15 @@ reveal = st.sidebar.slider("Reveal (bars)", 0, 120, 0, 5,
                            help="Bars past the one you are on, drawn in grey. The answer.")
 segments_on = st.sidebar.checkbox("Show the segments", True,
                                   help="Off is the chart without training wheels")
-sticks_on = st.sidebar.checkbox("Show the bars", False,
-                                help="High-low sticks behind the segments")
+# One control rather than two checkboxes, because the three are a choice and not
+# three independent things: candles already draw the range the sticks would.
+bars_on = st.sidebar.radio("Show the bars", ["Hidden", "High-low sticks", "Candles"],
+                           index=0, horizontal=False,
+                           help="Behind the segments. Candles show the open and close too - "
+                                "and show that the turns sit where the fitted price turned, "
+                                "not at the high or the low of the bar.")
+sticks_on = bars_on == "High-low sticks"
+candles_on = bars_on == "Candles"
 classify = st.sidebar.checkbox("Classify", True,
                                help="The tagger's reading: the swing names and the protective level")
 
@@ -210,14 +217,23 @@ reading = tagger.label(data, bar, rules, view=view) if classify else None
 figure, axis = plt.subplots(figsize=(15, 5.2))
 
 if segments_on:
-    plot.draw(data, bar, history=history, reveal=reveal, sticks=sticks_on, ax=axis)
+    plot.draw(data, bar, history=history, reveal=reveal,
+              sticks=sticks_on, candles=candles_on, ax=axis)
     if reading is not None:
         plot.annotate(axis, reading, right=bar)
 else:
     # The same window with the lines taken away: price alone, which is the level
-    # the training is actually aiming at.
+    # the training is actually aiming at. The bars still answer to the sidebar
+    # here - this is the view the reading is practised on, and practising it on
+    # candles when the chart being read is candles is the whole point.
     price = data.source_price()
     left = max(first, bar - history)
+    if candles_on:
+        plot.candlesticks(axis, data.bars.loc[left:bar])
+    elif sticks_on:
+        window = data.bars.loc[left:bar]
+        axis.vlines(window.index, window["low"], window["high"],
+                    color="#c8ccd2", linewidth=0.8, zorder=1)
     axis.plot(price.loc[left:bar].index, price.loc[left:bar].to_numpy(), color="#4a4f57", linewidth=1.3)
     if reveal:
         right = min(last, bar + reveal)

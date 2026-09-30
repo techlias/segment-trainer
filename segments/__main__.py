@@ -106,7 +106,8 @@ def plot_one(args) -> None:
     bar = args.bar if args.bar is not None else data.last_bar
 
     out = Path(args.out) if args.out else Path(f"segments-{bar}.png")
-    plot.save(data, bar, out, history=args.history, reveal=args.reveal, sticks=args.bars)
+    plot.save(data, bar, out, history=args.history, reveal=args.reveal,
+              sticks=args.bars, candles=args.candles)
 
     print(f"{out}  bar {bar}, {args.history} bars of history, {args.reveal} revealed")
 
@@ -125,7 +126,8 @@ def sheet(args) -> None:
     bars = sorted(random.sample(range(low, high), min(args.count, high - low)))
 
     out = Path(args.out) if args.out else Path("segments-sheet.png")
-    plot.contact_sheet(data, bars, out, history=args.history, reveal=args.reveal, sticks=args.bars)
+    plot.contact_sheet(data, bars, out, history=args.history, reveal=args.reveal,
+                       sticks=args.bars, candles=args.candles)
 
     print(f"{out}  bars {bars}")
 
@@ -262,6 +264,8 @@ def main(argv: list[str] | None = None) -> int:
     drawn.add_argument("--history", type=int, default=150, help="bars of context to show")
     drawn.add_argument("--reveal", type=int, default=0, help="bars past it to draw in grey - the answer")
     drawn.add_argument("--bars", action="store_true", help="high-low sticks behind the segments")
+    drawn.add_argument("--candles", action="store_true",
+                       help="the whole bar behind the segments, open and close as well")
     drawn.add_argument("--out", default=None)
     drawn.set_defaults(run=plot_one)
 
@@ -270,6 +274,7 @@ def main(argv: list[str] | None = None) -> int:
     many.add_argument("--history", type=int, default=150)
     many.add_argument("--reveal", type=int, default=0)
     many.add_argument("--bars", action="store_true")
+    many.add_argument("--candles", action="store_true")
     many.add_argument("--seed", type=int, default=0)
     many.add_argument("--out", default=None)
     many.set_defaults(run=sheet)

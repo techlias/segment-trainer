@@ -8,8 +8,20 @@ a misunderstanding of the data rather than a bug in the code.
 
 It draws segments, not candles. That is the trainer's view, and the brief's
 argument for it stands: the shape is what is being learnt, and the bars are
-noise around it. ``sticks=True`` puts a thin high-low line behind them for when
-what is being checked is the fit rather than the reading.
+noise around it. Two options put the bars back for when what is being checked is
+the fit rather than the reading - ``sticks=True`` for a thin high-low line, and
+``candles=True`` for the whole of it, open and close as well.
+
+Both stay off by default, and the candles are drawn muted and hollow rather than
+in red and green. The segments are the only saturated colour on the chart on
+purpose: candles in full colour would compete for exactly the attention the brief
+wants on the shape.
+
+    One thing the candles make obvious that the line chart hides: the vertices do
+    not touch the wicks. The fit runs through ONE price per bar - the close, or
+    the middle of the bar, whatever Source says - so a turn sits where that
+    series turned, not at the high or the low of the bar. It looks like an error
+    for about a second, and it is the most useful second the candles buy.
 """
 
 from __future__ import annotations
@@ -27,6 +39,10 @@ DOWN = "#cc5555"
 PROVISIONAL = "#8a8f98"
 HIDDEN = "#d9dce1"
 LEVEL = "#b07d2b"
+CANDLE = "#b9bec6"
+
+#: How wide a candle body is, in bars. Under 1 so neighbours do not touch.
+BODY = 0.62
 
 
 def draw(
@@ -35,6 +51,7 @@ def draw(
     history: int = 150,
     reveal: int = 0,
     sticks: bool = False,
+    candles: bool = False,
     ax: "matplotlib.axes.Axes | None" = None,
 ) -> "matplotlib.axes.Axes":
     """The segmentation as it was knowable at ``bar``.
@@ -56,7 +73,9 @@ def draw(
     left = max(dataset.first_bar, bar - history)
     right = min(dataset.last_bar, bar + reveal)
 
-    if sticks:
+    if candles:
+        candlesticks(ax, dataset.bars.loc[left:bar])
+    elif sticks:
         window = dataset.bars.loc[left:bar]
         ax.vlines(window.index, window["low"], window["high"], color="#c8ccd2", linewidth=0.8, zorder=1)
 
@@ -108,6 +127,56 @@ def draw(
     ax.grid(True, alpha=0.15)
 
     return ax
+
+
+def candlesticks(ax: "matplotlib.axes.Axes", window) -> None:
+    """Open, high, low and close as candles, behind everything else.
+
+    Direction is carried by whether the body is hollow rather than by colour,
+    the way it was before colour screens - see this module's note on why the
+    bars stay muted.
+
+    The wick is drawn in two pieces, above the body and below it, rather than as
+    one line from low to high with the body laid over it. A hollow body would
+    let that line show through, and a candle with a line down the middle of it
+    reads as something other than a candle.
+
+    A body with no height is not given one: an open equal to its close is a real
+    thing that happened, and a doji should look like a doji rather than like a
+    thin bar of some arbitrary minimum.
+    """
+    top = window[["open", "close"]].max(axis=1)
+    bottom = window[["open", "close"]].min(axis=1)
+
+    ax.vlines(window.index, top, window["high"], color=CANDLE, linewidth=0.8, zorder=1)
+    ax.vlines(window.index, window["low"], bottom, color=CANDLE, linewidth=0.8, zorder=1)
+
+    height = top - bottom
+    solid = height > 0
+
+    if solid.any():
+        ax.bar(
+            window.index[solid],
+            height[solid],
+            bottom=bottom[solid],
+            width=BODY,
+            facecolor=["none" if up else CANDLE
+                       for up in (window["close"] >= window["open"])[solid]],
+            edgecolor=CANDLE,
+            linewidth=0.8,
+            zorder=1,
+        )
+
+    flat = ~solid
+    if flat.any():
+        ax.hlines(
+            window["open"][flat],
+            window.index[flat] - BODY / 2,
+            window.index[flat] + BODY / 2,
+            color=CANDLE,
+            linewidth=0.8,
+            zorder=1,
+        )
 
 
 def annotate(ax: "matplotlib.axes.Axes", label, right: int | None = None) -> "matplotlib.axes.Axes":
