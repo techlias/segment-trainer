@@ -190,9 +190,14 @@ with st.sidebar.expander("The rules"):
         pullback_ratio=st.slider("Pullback gave back", 0.3, 1.0, 0.75, 0.05),
     )
 
-    # Not one of the tagger's rules - nothing below reads it - but it belongs
-    # beside them, because it is the other number on the page you would change
-    # to argue with what you are being shown.
+    # Not the tagger's rules - nothing the tagger does reads either of these -
+    # but they belong beside them, because they are the other numbers on the
+    # page you would change to argue with what you are being shown. Top to
+    # bottom in the order they appear on the chart.
+    band_period = st.slider("Bollinger (bars)", 5, 20, studies.BAND_PERIOD, 1,
+                            help=f"The band behind the price, at "
+                                 f"{studies.BAND_DEVIATIONS:g} standard deviations. "
+                                 "Short wraps price like an envelope; long barely moves")
     rsi_period = st.slider("RSI (bars)", 4, 20, studies.RSI_PERIOD, 1,
                            help="The momentum panel under the chart. Short reads every leg; "
                                 "long reads the session")
@@ -235,7 +240,7 @@ figure, (axis, lower) = plt.subplots(
 close = data.bars["close"]
 left = max(first, bar - history)
 right = min(last, bar + reveal)
-plot.bands(axis, studies.bollinger(close).loc[left:right])
+plot.bands(axis, studies.bollinger(close, period=band_period).loc[left:right])
 
 if segments_on:
     plot.draw(data, bar, history=history, reveal=reveal,

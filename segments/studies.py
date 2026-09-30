@@ -32,11 +32,15 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-#: What the user asked the viewer for: two standard deviations over four bars.
 #: Written the way NinjaTrader writes it - Bollinger(numStdDev, period), with
 #: the deviations first - so the two can be compared without translating.
+#:
+#: Fourteen bars rather than the textbook twenty. Four, where this started,
+#: tracks price so closely that the band becomes an envelope around it and stops
+#: saying anything about how unusual a move is; twenty barely moves inside a
+#: window this short. Neither is a law - it is a slider.
 BAND_DEVIATIONS = 2.0
-BAND_PERIOD = 4
+BAND_PERIOD = 14
 
 #: Short, for a study of how a leg is running rather than of the whole day.
 RSI_PERIOD = 10

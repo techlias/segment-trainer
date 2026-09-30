@@ -69,6 +69,19 @@ def test_a_band_needs_a_period(period):
         studies.bollinger(series([1, 2, 3]), period=period)
 
 
+def test_a_band_of_any_period_the_slider_offers():
+    """5 to 20, which is what the sidebar exposes."""
+    rng = np.random.default_rng(13)
+    price = series(100 + np.cumsum(rng.normal(0, 1.0, 120)))
+
+    for period in range(5, 21):
+        frame = studies.bollinger(price, period=period)
+
+        assert frame["middle"].isna().sum() == period - 1
+        assert (frame["upper"].dropna() >= frame["middle"].dropna()).all()
+        assert (frame["lower"].dropna() <= frame["middle"].dropna()).all()
+
+
 # --- RSI ---------------------------------------------------------------------
 
 def reference_rsi(values: list[float], period: int) -> list[float]:
