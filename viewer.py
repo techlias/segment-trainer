@@ -176,6 +176,10 @@ bars_on = st.sidebar.radio("Show the bars", ["Hidden", "High-low sticks", "Candl
                                 "not at the high or the low of the bar.")
 sticks_on = bars_on == "High-low sticks"
 candles_on = bars_on == "Candles"
+bands_on = st.sidebar.checkbox("Show the Bollinger", True,
+                               help="The band behind the price. Off is worth trying: it is the one "
+                                    "thing here that suggests where price should go rather than "
+                                    "describing where it went.")
 classify = st.sidebar.checkbox("Classify", True,
                                help="The tagger's reading: the swing names and the protective level")
 
@@ -240,7 +244,9 @@ figure, (axis, lower) = plt.subplots(
 close = data.bars["close"]
 left = max(first, bar - history)
 right = min(last, bar + reveal)
-plot.bands(axis, studies.bollinger(close, period=band_period).loc[left:right])
+
+if bands_on:
+    plot.bands(axis, studies.bollinger(close, period=band_period).loc[left:right])
 
 if segments_on:
     plot.draw(data, bar, history=history, reveal=reveal,
