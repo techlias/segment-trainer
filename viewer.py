@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 
 from segments import dataset as dataset_module
-from segments import fit, plot, replay, studies, tagger
+from segments import fit, plot, public, replay, studies, tagger
 
 HERE = Path(__file__).parent
 
@@ -60,6 +60,30 @@ def recut(stem: str, method: str, source: str, tolerance: float, min_bars: int, 
     while and the slider must not pay for it on every frame."""
     return fit.refit(
         load(stem), method=method, source=source, tolerance=tolerance, min_bars=min_bars, window=window
+    )
+
+
+@st.cache_data(show_spinner="Downloading the bars...", ttl=900)
+def public_bars(symbol: str, interval: str, days: int):
+    """The download, cached apart from the cut.
+
+    Two caches rather than one on purpose: the cut settings are not part of this
+    key, so moving a tolerance slider re-cuts bars already in hand instead of
+    asking Yahoo for them again.
+
+    A quarter of an hour to live, because unlike an export these bars keep
+    growing - the last one is the one forming now.
+    """
+    return public.fetch(symbol, interval, days)
+
+
+@st.cache_data(show_spinner="Cutting the bars...")
+def public_dataset(symbol: str, interval: str, days: int,
+                   method: str, source: str, tolerance: float, min_bars: int, window: int):
+    """Public bars as a dataset, cut at these settings."""
+    return public.build(
+        public_bars(symbol, interval, days), symbol=symbol, interval=interval,
+        method=method, source=source, tolerance=tolerance, min_bars=min_bars, window=window,
     )
 
 
@@ -93,7 +117,59 @@ def stash(files) -> str | None:
     return None
 
 
-def pick_dataset() -> tuple[str, object] | tuple[None, None]:
+#: How much history each interval opens on. Different numbers of days, one
+#: target: a couple of thousand bars, whatever a bar is worth here. Measured on
+#: NQ=F, these give 2,096 / 2,219 / 2,260 / 2,270 / 2,483.
+#:
+#: The number that matters is not the download, it is the CUT. Every bar gets
+#: its own fit over the window behind it - that is what makes the log causal -
+#: so the sweep is linear in bars, at about five milliseconds each in Python.
+#: Two thousand bars is a ten second pause; the 6,625 that thirty days of five
+#: minute bars comes to took 38 seconds, which is long enough that people
+#: assume the app has hung. Community Cloud is slower than this machine.
+#:
+#: The slider still goes to whatever Yahoo will serve. This is where it opens,
+#: not where it stops.
+OPENS_ON = {"5m": 10, "15m": 30, "30m": 60, "1h": 120, "1d": 3000}
+
+
+def pick_public() -> tuple[tuple, object] | tuple[None, None]:
+    """The instrument picker for Yahoo's bars."""
+    symbol = st.sidebar.selectbox(
+        "Instrument", list(public.SYMBOLS),
+        format_func=lambda one: f"{one} - {public.SYMBOLS[one][0]}",
+    )
+    interval = st.sidebar.selectbox("Bar size", list(public.INTERVALS))
+
+    # Yahoo's own cap for this interval, not a preference. Over it the download
+    # quietly returns less rather than failing, so the slider cannot ask.
+    cap = public.INTERVALS[interval] or 3650
+    days = st.sidebar.slider(
+        "History (days)", 5, cap, min(OPENS_ON.get(interval, 30), cap),
+        help=f"Yahoo serves at most {cap} days at {interval}. Every bar is cut against the "
+             "window behind it, so a long history is slow the first time - about five "
+             "seconds per thousand bars, then cached.",
+    )
+
+    key = (symbol, interval, days)
+
+    try:
+        return key, public_dataset(
+            symbol, interval, days,
+            method=public.DEFAULTS["method"],
+            source=public.DEFAULTS["source"],
+            tolerance=public.DEFAULTS["tolerance"],
+            min_bars=public.DEFAULTS["min_bars"],
+            window=public.DEFAULTS["window"],
+        )
+    except Exception as problem:
+        # Someone else's server, over someone else's network. It will fail
+        # sometimes, and when it does the app should say which part failed.
+        st.sidebar.error(f"Could not get {symbol} at {interval} from Yahoo:\n\n{problem}")
+        return None, None
+
+
+def pick_export() -> tuple[str, object] | tuple[None, None]:
     found: list[Path] = []
     for folder in FOLDERS:
         if folder.is_dir():
@@ -117,16 +193,42 @@ def pick_dataset() -> tuple[str, object] | tuple[None, None]:
     return str(chosen), load(str(chosen))
 
 
-stem, original = pick_dataset()
+st.sidebar.subheader("The bars")
+where = st.sidebar.radio(
+    "Where from", ["A NinjaTrader export", "Yahoo Finance"],
+    help="An export is the real thing and is checked against NinjaTrader bar for bar. "
+         "Yahoo is public data cut by the same code, for when there is no export to hand.",
+)
+
+if where == "Yahoo Finance":
+    kind = "public"
+    stem, original = pick_public()
+else:
+    kind = "export"
+    stem, original = pick_export()
 
 if original is None:
-    st.title("Segments")
-    st.info(
-        "No export found. Drop **SegmentExport** on a chart in NinjaTrader, let it run "
-        "through the history, then upload the two CSVs it wrote using the sidebar - "
-        "or put them in the `data` folder beside this app."
-    )
+    if kind == "export":
+        st.title("Segments")
+        st.info(
+            "No export found. Drop **SegmentExport** on a chart in NinjaTrader, let it run "
+            "through the history, then upload the two CSVs it wrote using the sidebar - "
+            "or put them in the `data` folder beside this app.\n\n"
+            "Or switch **Where from** to **Yahoo Finance** and read public bars instead."
+        )
     st.stop()
+
+if kind == "public":
+    # The label. Everything here is cut by the same code an export is cut by,
+    # but the BARS are Yahoo's - aggregated, revised, and with the session
+    # inferred from gaps rather than read from a template. There is no
+    # NinjaTrader run behind them to check against, and saying so once on screen
+    # is cheaper than someone eventually concluding the pipeline is broken.
+    st.sidebar.caption(
+        ":orange[Public bars.] Same segmentation, but nothing to verify them against - "
+        "Yahoo's candles are not the exchange's, and the session is guessed from gaps "
+        "in the timestamps. Fine for reading shapes, not evidence about MNQ."
+    )
 
 problems = original.check()
 if problems:
@@ -135,7 +237,7 @@ if problems:
 # --- what to cut, and how ----------------------------------------------------
 
 st.sidebar.subheader("The cut")
-st.sidebar.caption("Anything other than the export's own settings re-cuts the bars here.")
+st.sidebar.caption("Anything other than the settings these bars arrived with re-cuts them here.")
 
 meta = original.meta
 method = st.sidebar.selectbox("Method", fit.METHODS, index=fit.METHODS.index(meta.method))
@@ -155,7 +257,12 @@ untouched = (
     and min_bars == meta.minbars and window == meta.window
 )
 
-data = original if untouched else recut(stem, method, source, tolerance, min_bars, window)
+if untouched:
+    data = original
+elif kind == "public":
+    data = public_dataset(*stem, method, source, tolerance, min_bars, window)
+else:
+    data = recut(stem, method, source, tolerance, min_bars, window)
 
 # --- what to show ------------------------------------------------------------
 
@@ -209,6 +316,18 @@ with st.sidebar.expander("The rules"):
 # --- where to stand ----------------------------------------------------------
 
 first, last = data.first_bar, data.last_bar
+
+# Which bars these are, not how they were cut. Changing the tolerance should
+# leave you standing where you were - that is the whole point of moving it - but
+# changing the instrument, the interval or the history means the bar you were on
+# is a different moment in a different market, and keeping its number would be
+# keeping a coincidence.
+standing_on = (kind, str(stem))
+
+if st.session_state.get("standing_on") != standing_on:
+    st.session_state.standing_on = standing_on
+    st.session_state.bar = last
+
 if "bar" not in st.session_state or not first <= st.session_state.bar <= last:
     st.session_state.bar = last
 
@@ -309,7 +428,9 @@ e.metric("ATR", f"{data.bars.loc[bar, 'atr'] / ticksize:.0f}t")
 if not untouched:
     st.caption(
         f"Re-cut here: {method}/{source}, tolerance {tolerance} ATR, min {min_bars} bars, "
-        f"window {window}. The export itself is {meta.method}/{meta.source} at {meta.tolerance}."
+        f"window {window}. "
+        f"{'These bars arrived' if kind == 'public' else 'The export itself is'} "
+        f"{meta.method}/{meta.source} at {meta.tolerance}."
     )
 
 with st.expander("The legs behind this bar, newest first"):

@@ -30,6 +30,29 @@ python -m segments refit  <stem> --tolerance 0.5      # re-cut, no re-export
 Every command takes either CSV of an export, their shared stem, or a folder
 holding exactly one export.
 
+## Without an export
+
+The viewer's sidebar will also read public bars from Yahoo Finance — index
+futures, a couple of ETFs, five minutes up to a day — and cut them with the same
+code an export is cut with. It is there so the app has something to show on a
+machine that has never seen NinjaTrader.
+
+It is not the same thing as an export, and the app says so on screen. There is
+no NinjaTrader run behind those bars, so `segments verify` has nothing to diff
+against; Yahoo's candles are aggregated and revised rather than the exchange's;
+and the session is inferred from gaps in the timestamps instead of read from a
+session template. Good for learning to read a shape. Not evidence about MNQ.
+
+```python
+from segments import public
+
+data = public.dataset("NQ=F", "5m", days=10)   # downloads, cuts, and labels itself public
+```
+
+Every bar is cut against the window behind it, so the sweep costs about five
+milliseconds a bar: two thousand bars is a ten second pause, and the viewer's
+defaults are picked to land there.
+
 ## Running it somewhere else
 
 [DEPLOY.md](DEPLOY.md) — Streamlit Community Cloud, free, from a private repo,

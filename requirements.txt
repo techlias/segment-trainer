@@ -5,3 +5,4 @@ streamlit>=1.60     # st.iframe, used by the tutorial page
 pandas>=2.0
 numpy>=1.24
 matplotlib>=3.7
+yfinance>=0.2       # the public bars, when there is no export to hand
