@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 
 from segments import dataset as dataset_module
-from segments import fit, plot, replay, tagger
+from segments import fit, plot, replay, studies, tagger
 
 HERE = Path(__file__).parent
 
@@ -190,6 +190,13 @@ with st.sidebar.expander("The rules"):
         pullback_ratio=st.slider("Pullback gave back", 0.3, 1.0, 0.75, 0.05),
     )
 
+    # Not one of the tagger's rules - nothing below reads it - but it belongs
+    # beside them, because it is the other number on the page you would change
+    # to argue with what you are being shown.
+    rsi_period = st.slider("RSI (bars)", 4, 20, studies.RSI_PERIOD, 1,
+                           help="The momentum panel under the chart. Short reads every leg; "
+                                "long reads the session")
+
 # --- where to stand ----------------------------------------------------------
 
 first, last = data.first_bar, data.last_bar
@@ -214,7 +221,21 @@ pivots = view.pivots()
 pieces = view.segments()
 reading = tagger.label(data, bar, rules, view=view) if classify else None
 
-figure, axis = plt.subplots(figsize=(15, 5.2))
+# Price over momentum, sharing an x axis so the two can never drift apart by a
+# bar - which is the only way a panel underneath is worth anything.
+figure, (axis, lower) = plt.subplots(
+    2, 1, sharex=True, figsize=(15, 6.6),
+    gridspec_kw={"height_ratios": [3.4, 1], "hspace": 0.08},
+)
+
+# Behind everything, and drawn before everything, so nothing has to argue about
+# z order with it. The band reaches to the revealed bars too when they are shown:
+# it is context, not a reading, and hiding it at the edge would only make the
+# right hand side look calmer than it was.
+close = data.bars["close"]
+left = max(first, bar - history)
+right = min(last, bar + reveal)
+plot.bands(axis, studies.bollinger(close).loc[left:right])
 
 if segments_on:
     plot.draw(data, bar, history=history, reveal=reveal,
@@ -227,7 +248,6 @@ else:
     # here - this is the view the reading is practised on, and practising it on
     # candles when the chart being read is candles is the whole point.
     price = data.source_price()
-    left = max(first, bar - history)
     if candles_on:
         plot.candlesticks(axis, data.bars.loc[left:bar])
     elif sticks_on:
@@ -236,13 +256,18 @@ else:
                     color="#c8ccd2", linewidth=0.8, zorder=1)
     axis.plot(price.loc[left:bar].index, price.loc[left:bar].to_numpy(), color="#4a4f57", linewidth=1.3)
     if reveal:
-        right = min(last, bar + reveal)
         axis.plot(price.loc[bar:right].index, price.loc[bar:right].to_numpy(),
                   color=plot.HIDDEN, linewidth=1.3)
         axis.axvline(bar, color="#b0b4ba", linewidth=1.0, linestyle=":")
     axis.set_xlim(left, max(bar + reveal, bar) + 2)
     axis.grid(True, alpha=0.15)
     axis.set_xlabel("bar")
+
+# The x label belongs to the bottom panel now, not to the price.
+axis.set_xlabel("")
+plot.momentum(lower, studies.rsi(close, rsi_period).loc[left:right], rsi_period,
+              at=bar if reveal else None)
+lower.set_xlabel("bar")
 
 st.pyplot(figure, width="stretch")
 plt.close(figure)

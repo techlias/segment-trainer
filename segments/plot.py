@@ -49,6 +49,15 @@ CANDLE_DOWN = "#eab3b3"
 #: How wide a candle body is, in bars. Under 1 so neighbours do not touch.
 BODY = 0.62
 
+#: The Bollinger band, softer than anything else on the chart. It is context,
+#: not a reading - if it ever competes with the segments it is drawn wrong.
+BAND = "#93a8c4"
+BAND_FILL = "#eef1f6"
+
+#: The RSI panel. One hue, with its own levels in a lighter tone of it.
+MOMENTUM = "#7a6ea8"
+MOMENTUM_GRID = "#d8d3e6"
+
 
 def draw(
     dataset: Dataset,
@@ -179,6 +188,56 @@ def candlesticks(ax: "matplotlib.axes.Axes", window) -> None:
             linewidth=0.8,
             zorder=1,
         )
+
+
+def bands(ax: "matplotlib.axes.Axes", frame) -> None:
+    """A Bollinger band behind everything, as faint as it can be and still be
+    there.
+
+    Softer than the candles on purpose, and softer again than the segments. The
+    band is here to answer "how unusual is this leg" while the eye is on the
+    leg - the moment it is legible enough to read on its own it has taken the
+    attention the shape was supposed to have.
+
+    The middle is dashed, so it is never mistaken for one of the two edges at a
+    glance.
+    """
+    ax.fill_between(frame.index, frame["lower"], frame["upper"],
+                    color=BAND_FILL, zorder=0)
+
+    for column, style in (("upper", "-"), ("lower", "-"), ("middle", "--")):
+        ax.plot(frame.index, frame[column].to_numpy(),
+                color=BAND, linewidth=0.9, linestyle=style, zorder=0)
+
+
+def momentum(ax: "matplotlib.axes.Axes", values, period: int,
+             at: int | None = None) -> "matplotlib.axes.Axes":
+    """The RSI, as a panel of its own under the price.
+
+    Fixed to 0-100 whatever the window holds. An RSI panel that rescales to
+    its own extremes is worse than no panel: 70 has to sit in the same place on
+    Tuesday as it did on Monday or there is nothing to read off it.
+
+    The 30 and 70 lines are drawn, and 50 between them in a lighter hand, since
+    which side of the middle momentum sits is most of what the study is for.
+    """
+    ax.plot(values.index, values.to_numpy(), color=MOMENTUM, linewidth=1.3, zorder=3)
+
+    ax.axhspan(30, 70, color=MOMENTUM_GRID, alpha=0.25, zorder=0)
+
+    for level, width in ((70, 0.9), (50, 0.7), (30, 0.9)):
+        ax.axhline(level, color=MOMENTUM_GRID, linewidth=width,
+                   linestyle="-" if level != 50 else ":", zorder=1)
+
+    if at is not None:
+        ax.axvline(at, color="#b0b4ba", linewidth=1.0, linestyle=":", zorder=2)
+
+    ax.set_ylim(0, 100)
+    ax.set_yticks([30, 50, 70])
+    ax.set_ylabel(f"RSI {period}", fontsize=9)
+    ax.grid(True, axis="x", alpha=0.15)
+
+    return ax
 
 
 def annotate(ax: "matplotlib.axes.Axes", label, right: int | None = None) -> "matplotlib.axes.Axes":
