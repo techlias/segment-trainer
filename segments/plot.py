@@ -247,15 +247,31 @@ def annotate(ax: "matplotlib.axes.Axes", label, right: int | None = None) -> "ma
     the protective level, the one price has to close through for the structure
     to be broken. Those are the two things a person reading the chart is being
     asked to see, and a third would start hiding them.
+
+    THE NEWEST TAG IS BRACKETED
+
+        (LH) rather than LH. The newest swing is settled with the help of where
+        price is NOW, because the leg leaving it has not finished - see
+        :func:`segments.tagger.swings_at`. It is not lookahead, it is today, but
+        it does mean that one tag can still change its mind while every older
+        one is settled. A tag that might be withdrawn should not look like one
+        that cannot.
+
+        A display convention, so it lives here and not in the tagger: the kind
+        on a :class:`segments.tagger.Swing` stays the bare name, and every
+        caller that reads the data rather than looks at it sees what it always
+        saw. PriceSegments draws it the same way for the same reason, which is
+        the point - the two charts have to be readable as one notation.
     """
     left, edge = ax.get_xlim()
+    newest = label.swings[-1].bar if label.swings else None
 
     for swing in label.swings:
         if swing.bar < left or swing.kind == "first":
             continue
 
         ax.annotate(
-            swing.kind,
+            f"({swing.kind})" if swing.bar == newest else swing.kind,
             (swing.bar, swing.price),
             textcoords="offset points",
             xytext=(0, 9 if swing.high else -16),
