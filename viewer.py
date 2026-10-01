@@ -23,15 +23,25 @@ THE REVEAL
 
 from __future__ import annotations
 
+import json
 import random
 
 import matplotlib.pyplot as plt
 import streamlit as st
 
 import sources
-from segments import fit, plot, replay, studies, tagger
+from segments import fit, gym, plot, replay, scoring, studies, tagger
 
 st.set_page_config(page_title="Segments", layout="wide")
+
+
+def kept_trades() -> list:
+    """Trades from sessions already ended, this browser session.
+
+    Community Cloud forgets its filesystem on every redeploy, so nothing is
+    written down - the history lives here and leaves as a file.
+    """
+    return st.session_state.setdefault("kept", [])
 
 
 kind, stem, original = sources.pick()
@@ -91,8 +101,27 @@ st.sidebar.page_link("pages/1_Tutorial.py", label="How to read this page", icon=
 
 st.sidebar.subheader("The view")
 history = st.sidebar.slider("History (bars)", 40, 400, 150, 10)
-reveal = st.sidebar.slider("Reveal (bars)", 0, 120, 0, 5,
-                           help="Bars past the one you are on, drawn in grey. The answer.")
+
+# The gym is a mode of this page rather than a page of its own, because the
+# whole apparatus - the bands, the turn names, the protective level, the
+# momentum panel - is what you would actually read before deciding to buy.
+# Trading a stripped-down chart would measure something, but not the thing this
+# trainer teaches.
+#
+# What it takes away is the two controls that can see the future: reveal, and a
+# bar you can drag anywhere. In the gym the bar only goes forward, one press at
+# a time. See segments/gym.py.
+trading = st.sidebar.toggle(
+    "Trading gym", False,
+    help="Two buttons, bar by bar, with the future hidden. The reveal slider and the "
+         "bar slider go away while it is on - both of them would let you trade knowing "
+         "what came next.",
+)
+
+reveal = 0 if trading else st.sidebar.slider(
+    "Reveal (bars)", 0, 120, 0, 5,
+    help="Bars past the one you are on, drawn in grey. The answer.",
+)
 segments_on = st.sidebar.checkbox("Show the segments", True,
                                   help="Off is the chart without training wheels")
 # One control rather than two checkboxes, because the three are a choice and not
@@ -152,16 +181,54 @@ if st.session_state.get("standing_on") != standing_on:
 if "bar" not in st.session_state or not first <= st.session_state.bar <= last:
     st.session_state.bar = last
 
-step_back, step_on, jump, _ = st.columns([1, 1, 1, 9])
-if step_back.button("◀", width="stretch"):
-    st.session_state.bar = max(first, st.session_state.bar - 1)
-if step_on.button("▶", width="stretch"):
-    st.session_state.bar = min(last, st.session_state.bar + 1)
-if jump.button("random", width="stretch"):
-    low = min(first + max(history, data.meta.window), last - reveal - 1)
-    st.session_state.bar = random.randint(max(first, low), max(first + 1, last - reveal))
+earliest = min(first + max(history, data.meta.window), last - 50)
 
-bar = st.slider("Bar", first, last, key="bar")
+if trading:
+    # Forward only, from a bar nobody has looked at. No slider: a draggable bar
+    # is the same lookahead as the reveal, one drag further away.
+    if "session" not in st.session_state or st.session_state.get("trading_on") != standing_on:
+        st.session_state.trading_on = standing_on
+        st.session_state.session = gym.Session(
+            data, start=random.randint(max(first, earliest), max(first + 1, last - 50))
+        )
+
+    session: gym.Session = st.session_state.session
+
+    def press(action: str) -> None:
+        if session.allowed(action):
+            session.press(action)
+
+    buy, sell, step, step10, fresh = st.columns([1.1, 1.1, 1, 1, 1.2])
+    buy.button("Buy  ·  B", width="stretch", disabled=not session.allowed(gym.BUY),
+               on_click=press, args=(gym.BUY,), key="buy")
+    sell.button("Sell  ·  S", width="stretch", disabled=not session.allowed(gym.SELL),
+                on_click=press, args=(gym.SELL,), key="sell")
+    step.button("Next bar  ·  →", width="stretch", disabled=session.finished,
+                on_click=session.advance, args=(1,), key="step")
+    step10.button("+10 bars", width="stretch", disabled=session.finished,
+                  on_click=session.advance, args=(10,), key="step10")
+
+    if fresh.button("End & restart", width="stretch", key="fresh"):
+        session.finish()
+        st.session_state.kept = kept_trades() + [
+            one for one in session.trades if one not in kept_trades()
+        ]
+        st.session_state.session = gym.Session(
+            data, start=random.randint(max(first, earliest), max(first + 1, last - 50))
+        )
+        st.rerun()
+
+    bar = session.bar
+else:
+    step_back, step_on, jump, _ = st.columns([1, 1, 1, 9])
+    if step_back.button("◀", width="stretch"):
+        st.session_state.bar = max(first, st.session_state.bar - 1)
+    if step_on.button("▶", width="stretch"):
+        st.session_state.bar = min(last, st.session_state.bar + 1)
+    if jump.button("random", width="stretch"):
+        st.session_state.bar = random.randint(max(first, earliest), max(first + 1, last - reveal))
+
+    bar = st.slider("Bar", first, last, key="bar")
 
 # --- the chart ---------------------------------------------------------------
 
@@ -214,6 +281,23 @@ else:
     axis.grid(True, alpha=0.15)
     axis.set_xlabel("bar")
 
+if trading:
+    # The open position, and whatever has already been closed in view. Drawn
+    # over everything, since while a trade is on it is the thing being watched.
+    if session.position is not None:
+        held = session.position
+        axis.scatter([held.bar], [held.price], s=110, zorder=7,
+                     marker="^" if held.direction == gym.LONG else "v",
+                     color=plot.UP if held.direction == gym.LONG else plot.DOWN)
+        axis.axhline(held.price, color="#8a8f98", linewidth=1.0, linestyle=":", zorder=2)
+
+    for done in session.trades:
+        if done.exit_bar < left:
+            continue
+        axis.plot([done.entry_bar, done.exit_bar], [done.entry_price, done.exit_price],
+                  color=plot.UP if done.r > 0 else plot.DOWN,
+                  linewidth=1.2, alpha=0.5, zorder=6)
+
 # The x label belongs to the bottom panel now, not to the price.
 axis.set_xlabel("")
 plot.momentum(lower, studies.rsi(close, rsi_period).loc[left:right], rsi_period,
@@ -222,6 +306,52 @@ lower.set_xlabel("bar")
 
 st.pyplot(figure, width="stretch")
 plt.close(figure)
+
+if trading:
+    position, entry, open_r, bars_in = st.columns(4)
+    position.metric("Position", session.state.upper())
+
+    if session.position is not None:
+        entry.metric("Entry", f"{session.position.price:,.2f}")
+        open_r.metric("Open", f"{session.open_r():+.2f} R",
+                      f"{session.position.points(session.price()):+.2f} pts")
+        bars_in.metric("Bars held", session.held())
+    else:
+        entry.metric("Entry", "-")
+        open_r.metric("Open", "-")
+        bars_in.metric("Bars held", "-")
+
+    if session.finished:
+        st.warning("The bars have run out. **End & restart** books anything still open as forced.")
+
+    # Keyboard shortcuts. Streamlit has no binding of its own, so this reaches
+    # out of the component's iframe and clicks the real buttons by their label.
+    # Best effort - every shortcut has a button too.
+    st.iframe(
+        """
+        <script>
+        const doc = window.parent.document;
+        const hit = (text) => {
+            const one = Array.from(doc.querySelectorAll('button'))
+                .find(b => b.innerText.trim().startsWith(text) && !b.disabled);
+            if (one) one.click();
+        };
+        if (!doc.__gymKeys) {
+            doc.__gymKeys = true;
+            doc.addEventListener('keydown', (event) => {
+                const tag = event.target.tagName;
+                if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+                if (event.key === 'b' || event.key === 'B') hit('Buy');
+                if (event.key === 's' || event.key === 'S') hit('Sell');
+                if (event.key === 'ArrowRight') hit('Next bar');
+            });
+        }
+        </script>
+        """,
+        # st.iframe will not take 0 the way components.html did, and one pixel
+        # of nothing is as close to invisible as it allows.
+        height=1,
+    )
 
 if reading is not None:
     # The colour is the state, so the reading can be taken in before it is read.
@@ -292,3 +422,123 @@ with st.expander("What this dataset costs you in lag"):
             "Measured over the whole file, which is the one thing here that looks "
             "forward. It is a property of the dataset, never a feature."
         )
+
+
+# --- the score, when the gym is on -------------------------------------------
+
+if trading:
+    closed = kept_trades() + [one for one in session.trades if one not in kept_trades()]
+
+    st.divider()
+
+    if not closed:
+        st.info(
+            "No closed trades yet. **B** opens a long, **S** a short, **→** moves one bar on. "
+            "Everything else on this page still works - the whole point is to read the "
+            "structure before you press anything."
+        )
+    else:
+        overall = scoring.report(closed)
+        form = scoring.rolling(closed)
+
+        st.subheader(overall.score.tier)
+
+        if not overall.score.ranked:
+            st.caption(
+                f"{overall.score.trades} of {scoring.RANK_AFTER} trades. A number appears at "
+                f"{scoring.RANK_AFTER}; it takes a few hundred before a tier means much, which "
+                "is why the tier is read off the bottom of the error bar rather than off the "
+                "number itself."
+            )
+        else:
+            st.caption(
+                f"Sharpe {overall.score.sharpe:+.3f}, 95% band {overall.score.low:+.3f} to "
+                f"{overall.score.high:+.3f}. The tier is the bottom of that band - on the "
+                f"number alone it would read **{overall.score.tier_if_believed}**."
+            )
+
+        one, two, three, four, five = st.columns(5)
+        one.metric("Trades", overall.trades,
+                   f"{overall.forced} forced" if overall.forced else None)
+        two.metric("Win rate", f"{overall.win_rate:.0%}",
+                   f"{overall.wins}W / {overall.losses}L"
+                   + (f" / {overall.scratches}=" if overall.scratches else ""))
+        three.metric("Expectancy", f"{overall.expectancy:+.3f} R")
+        four.metric("Total", f"{overall.total_r:+.1f} R")
+        five.metric("Max drawdown", f"{overall.max_drawdown:.1f} R",
+                    f"{overall.longest_losing_streak} in a row")
+
+        six, seven, eight, nine, ten = st.columns(5)
+        six.metric("Average win", f"{overall.average_win:+.2f} R" if overall.average_win else "-")
+        seven.metric("Average loss", f"{overall.average_loss:+.2f} R" if overall.average_loss else "-")
+        eight.metric("Payoff", f"{overall.payoff:.2f}" if overall.payoff else "-")
+        nine.metric("Profit factor", f"{overall.profit_factor:.2f}" if overall.profit_factor else "-")
+        ten.metric("MFE kept", f"{overall.capture:.0%}" if overall.capture else "-",
+                   help="Of the move a winner offered, how much was taken. A good entry with "
+                        "a bad exit shows up here and nowhere else.")
+
+        curve, current = st.columns([2, 1])
+
+        with curve:
+            st.caption("Cumulative R")
+            figure, axis = plt.subplots(figsize=(8, 2.6))
+            axis.plot(range(1, len(overall.equity) + 1), overall.equity,
+                      color=plot.UP if overall.total_r >= 0 else plot.DOWN, linewidth=1.6)
+            axis.axhline(0, color="#b0b4ba", linewidth=1.0)
+            axis.set_xlabel("trade")
+            axis.grid(True, alpha=0.15)
+            st.pyplot(figure, width="stretch")
+            plt.close(figure)
+
+        with current:
+            st.caption("Current form - last 50")
+            st.metric("Sharpe", f"{form.score.sharpe:+.3f}" if form.score.sharpe else "-",
+                      f"{form.trades} trades")
+            st.caption("No tier here on purpose: at fifty trades the error bar is wider "
+                       "than the whole ladder.")
+
+        for title, attribute in (("By direction", "direction"), ("By timeframe", "timeframe")):
+            with st.expander(title):
+                st.dataframe(
+                    [
+                        {
+                            "": label,
+                            "trades": part.trades,
+                            "win rate": f"{part.win_rate:.0%}",
+                            "expectancy (R)": f"{part.expectancy:+.3f}",
+                            "total (R)": f"{part.total_r:+.1f}",
+                            "Sharpe": f"{part.score.sharpe:+.3f}" if part.score.sharpe else "-",
+                        }
+                        for label, part in scoring.by(closed, attribute).items()
+                    ],
+                    hide_index=True, width="stretch",
+                )
+
+    with st.expander("History"):
+        st.caption(
+            "Community Cloud forgets its filesystem on every redeploy, so this lives in the "
+            "browser session and leaves as a file. Download before you close the tab."
+        )
+
+        save, bring, wipe = st.columns(3)
+
+        save.download_button(
+            "Download", width="stretch",
+            data=json.dumps([one.as_dict() for one in closed], indent=1),
+            file_name="gym-history.json", mime="application/json",
+            disabled=not closed,
+        )
+
+        brought = bring.file_uploader("Load a history", type="json", label_visibility="collapsed")
+        if brought is not None:
+            loaded = [gym.Trade.from_dict(row) for row in json.load(brought)]
+            known = {one.session for one in kept_trades()}
+            st.session_state.kept = kept_trades() + [
+                one for one in loaded if one.session not in known
+            ]
+            st.success(f"{len(loaded)} trades read in.")
+
+        if wipe.button("Forget everything", width="stretch"):
+            st.session_state.kept = []
+            st.session_state.pop("session", None)
+            st.rerun()
